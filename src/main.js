@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-import { Sky } from 'three/examples/jsm/objects/Sky.js';
-import { Water } from 'three/examples/jsm/objects/Water.js';
 import { SoundSystem } from './audio.js';
 import { JET_CONFIGS, createJetMesh, updateJetVisuals, createCarrierGroup } from './jets.js';
+import { createRealisticEnvironment } from './environment.js';
 
 // ==========================================
 // STORAGE & INPUT SANITIZATION (SECURE CODING)
@@ -11,16 +10,16 @@ const STORAGE_KEY = 'tailhook_aces_save_v1';
 const CALLSIGN_REGEX = /^[A-Za-z0-9 _-]{1,16}$/;
 
 function sanitizeCallsign(raw) {
-  if (typeof raw !== 'string') return 'MAVERICK';
+  if (typeof raw !== 'string') return 'MAVERICK JR';
   const cleaned = raw.toUpperCase().replace(/[^A-Z0-9 _-]/g, '').trim().slice(0, 16);
-  return CALLSIGN_REGEX.test(cleaned) ? cleaned : 'MAVERICK';
+  return CALLSIGN_REGEX.test(cleaned) ? cleaned : 'MAVERICK JR';
 }
 
 function loadSaveData() {
   // Note: Only non-sensitive game high scores, stage grades, and pilot callsign are stored locally.
   // TODO(security): If backend authentication is ever added, use HttpOnly SameSite cookies instead of localStorage.
   const defaults = {
-    callsign: 'MAVERICK',
+    callsign: 'MAVERICK JR',
     selectedJet: 'f18',
     bestWave: 1,
     bestScore: 0,
@@ -88,8 +87,8 @@ const CARRIER_STAGES = {
     waterColor: 0x002442,
     sunIntensity: 2.3,
     ambientIntensity: 0.85,
-    carrierSpeedMps: 11.5,
-    windVec: new THREE.Vector3(10.5, 0, 0),
+    carrierSpeedMps: 11.5, // ~22 kts forward along -Z
+    windVec: new THREE.Vector3(10.5, 0, 0), // 20+ kt crosswind pushing right
     turbulence: 0.15,
     deckPitchAmp: 0.006,
     overheadBreak: false,
@@ -198,6 +197,7 @@ const camera = new THREE.PerspectiveCamera(
   24000
 );
 
+// Hemisphere + Directional Sun Lighting
 const ambientLight = new THREE.HemisphereLight(0xd8ecff, 0x1a3048, 0.95);
 scene.add(ambientLight);
 
@@ -216,257 +216,37 @@ sunLight.shadow.camera.bottom = -dShadow;
 scene.add(sunLight);
 
 // ==========================================
-// PHYSICAL ATMOSPHERIC SKY & PBR REFLECTIONS
+// REALISTIC SINGLE-PASS SKY, OCEAN & VOLCANIC ISLANDS
 // ==========================================
-const sky = new Sky();
-sky.scale.setScalar(22000);
-scene.add(sky);
+const envSystem = createRealisticEnvironment(scene, renderer);
 
-const pmremGenerator = new THREE.PMREMGenerator(renderer);
-let envRenderTarget = null;
+function setAtmosphere(atmosConfig) {
+  const {
+    sunElevation = 24,
+    sunIntensity = 2.6,
+    ambientIntensity = 0.9
+  } = atmosConfig;
 
-function setAtmosphere({
-  sunElevation = 24,
-  sunAzimuth = 145,
-  turbidity = 3.5,
-  rayleigh = 1.8,
-  fogColor = 0x8fbce0,
-  fogDensity = 0.00009,
-  waterColor = 0x002b4d,
-  sunIntensity = 2.6,
-  ambientIntensity = 0.9
-}) {
-  const skyUniforms = sky.material.uniforms;
-  skyUniforms['turbidity'].value = turbidity;
-  skyUniforms['rayleigh'].value = rayleigh;
-  skyUniforms['mieCoefficient'].value = 0.005;
-  skyUniforms['mieDirectionalG'].value = 0.82;
-
-  const phi = THREE.MathUtils.degToRad(90 - sunElevation);
-  const theta = THREE.MathUtils.degToRad(sunAzimuth);
-  const sunVec = new THREE.Vector3().setFromSphericalCoords(1, phi, theta);
-  skyUniforms['sunPosition'].value.copy(sunVec);
+  const sunVec = envSystem.setAtmosphere(atmosConfig);
 
   sunLight.position.copy(sunVec).multiplyScalar(1400);
   sunLight.intensity = sunIntensity;
   sunLight.color.setHex(sunElevation < 6 ? 0xff9d5c : 0xfff5e4);
   ambientLight.intensity = ambientIntensity;
-
-  scene.fog.color.setHex(fogColor);
-  scene.fog.density = fogDensity;
-
-  if (waterMesh && waterMesh.material && waterMesh.material.uniforms) {
-    waterMesh.material.uniforms['sunDirection'].value.copy(sunVec).normalize();
-    waterMesh.material.uniforms['waterColor'].value.setHex(waterColor);
-    waterMesh.material.uniforms['sunColor'].value.setHex(sunElevation < 6 ? 0xff7733 : 0xffffff);
-  }
-
-  const envScene = new THREE.Scene();
-  const envSky = new Sky();
-  envSky.scale.setScalar(100);
-  envSky.material.uniforms['turbidity'].value = turbidity;
-  envSky.material.uniforms['rayleigh'].value = rayleigh;
-  envSky.material.uniforms['mieCoefficient'].value = 0.005;
-  envSky.material.uniforms['mieDirectionalG'].value = 0.82;
-  envSky.material.uniforms['sunPosition'].value.copy(sunVec);
-  envScene.add(envSky);
-
-  if (envRenderTarget) envRenderTarget.dispose();
-  envRenderTarget = pmremGenerator.fromScene(envScene);
-  scene.environment = envRenderTarget.texture;
 }
 
-// ==========================================
-// GPU SHADER OCEAN WITH PROCEDURAL NORMAL MAP
-// ==========================================
-function createProceduralWaterNormalTexture() {
-  const size = 256;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  const imgData = ctx.createImageData(size, size);
-  const data = imgData.data;
-
-  const twoPi = Math.PI * 2;
-  for (let y = 0; y < size; y++) {
-    const ny = (y / size) * twoPi;
-    for (let x = 0; x < size; x++) {
-      const nx = (x / size) * twoPi;
-      const dx =
-        Math.cos(nx * 3 + ny * 2) * 0.35 +
-        Math.cos(nx * 7 - ny * 5) * 0.25 +
-        Math.sin(nx * 13 + ny * 11) * 0.15;
-      const dy =
-        Math.sin(nx * 2 - ny * 4) * 0.35 +
-        Math.cos(nx * 6 + ny * 8) * 0.25 +
-        Math.cos(nx * 11 - ny * 14) * 0.15;
-
-      const idx = (y * size + x) * 4;
-      data[idx] = Math.floor((dx * 0.5 + 0.5) * 255);
-      data[idx + 1] = Math.floor((dy * 0.5 + 0.5) * 255);
-      data[idx + 2] = 235;
-      data[idx + 3] = 255;
-    }
-  }
-  ctx.putImageData(imgData, 0, 0);
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  return tex;
-}
-
-const oceanGeo = new THREE.PlaneGeometry(36000, 36000);
-const waterMesh = new Water(oceanGeo, {
-  textureWidth: 512,
-  textureHeight: 512,
-  waterNormals: createProceduralWaterNormalTexture(),
-  sunDirection: new THREE.Vector3(),
-  sunColor: 0xffffff,
-  waterColor: 0x002b4d,
-  distortionScale: 3.4,
-  fog: true
-});
-waterMesh.rotation.x = -Math.PI / 2;
-waterMesh.material.uniforms['size'].value = 2.4;
-scene.add(waterMesh);
-
+// Initialize Default Atmosphere
 setAtmosphere(CARRIER_STAGES[1]);
 
-// ==========================================
-// VOLUMETRIC-STYLE SOFT CLOUDS & ARCHIPELAGO ISLANDS
-// ==========================================
-const environmentGroup = new THREE.Group();
-scene.add(environmentGroup);
-
-function createSoftCloudTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-
-  const lobes = [
-    [128, 136, 95],
-    [88, 144, 72],
-    [168, 144, 72],
-    [128, 104, 75]
-  ];
-  for (const [lx, ly, r] of lobes) {
-    const grad = ctx.createRadialGradient(lx, ly, r * 0.12, lx, ly, r);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 0.55)');
-    grad.addColorStop(0.5, 'rgba(242, 248, 255, 0.28)');
-    grad.addColorStop(1, 'rgba(230, 240, 255, 0.0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(lx, ly, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  return new THREE.CanvasTexture(canvas);
-}
-
-function buildSculptedIsland(ix, iz, radius, maxHeight) {
-  const geo = new THREE.ConeGeometry(radius, maxHeight, 28, 10, false);
-  const pos = geo.attributes.position;
-  const colors = [];
-  const colorTmp = new THREE.Color();
-
-  for (let i = 0; i < pos.count; i++) {
-    let vx = pos.getX(i);
-    const vy = pos.getY(i) + maxHeight * 0.42;
-    let vz = pos.getZ(i);
-
-    const dist = Math.hypot(vx, vz);
-    const angle = Math.atan2(vz, vx);
-    if (dist > 1) {
-      const ridgeNoise =
-        1.0 +
-        Math.sin(angle * 3 + ix * 0.01) * 0.18 +
-        Math.cos(angle * 5 - iz * 0.01) * 0.12 +
-        Math.sin(dist * 0.025) * 0.08;
-      vx *= ridgeNoise;
-      vz *= ridgeNoise;
-    }
-
-    pos.setXYZ(i, vx, vy, vz);
-
-    if (vy < 14) {
-      colorTmp.setHex(0xd2be96);
-    } else if (vy < maxHeight * 0.52) {
-      colorTmp.setHex(0x2f5a3c);
-    } else {
-      colorTmp.setHex(0x56616b);
-    }
-    colors.push(colorTmp.r, colorTmp.g, colorTmp.b);
-  }
-
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  geo.computeVertexNormals();
-
-  const mat = new THREE.MeshStandardMaterial({
-    vertexColors: true,
-    roughness: 0.88,
-    metalness: 0.08,
-    flatShading: true
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.set(ix, 0, iz);
-  mesh.receiveShadow = true;
-  return mesh;
-}
-
-function buildEnvironment() {
-  const cloudTex = createSoftCloudTexture();
-  const cloudSpriteMat = new THREE.SpriteMaterial({
-    map: cloudTex,
-    transparent: true,
-    opacity: 0.82,
-    depthWrite: false
-  });
-
-  for (let i = 0; i < 42; i++) {
-    const angle = (i / 42) * Math.PI * 2;
-    const dist = 1350 + (i % 6) * 980;
-    const cx = Math.cos(angle) * dist;
-    const cy = 520 + (i % 4) * 145;
-    const cz = Math.sin(angle) * dist;
-
-    const puffs = 4 + (i % 3);
-    for (let p = 0; p < puffs; p++) {
-      const sprite = new THREE.Sprite(cloudSpriteMat);
-      sprite.position.set(
-        cx + (p - 1.5) * 95 + (Math.random() - 0.5) * 40,
-        cy + (Math.random() - 0.5) * 28,
-        cz + (Math.random() - 0.5) * 85
-      );
-      const scaleW = 280 + Math.random() * 180;
-      const scaleH = 130 + Math.random() * 75;
-      sprite.scale.set(scaleW, scaleH, 1);
-      environmentGroup.add(sprite);
-    }
-  }
-
-  const islandCoords = [
-    [-2500, -2100, 520, 290],
-    [2800, -1750, 620, 340],
-    [-2100, 2550, 460, 240],
-    [2450, 2350, 540, 310],
-    [-3800, 400, 680, 380],
-    [3900, 650, 590, 320]
-  ];
-  for (const [ix, iz, radius, height] of islandCoords) {
-    environmentGroup.add(buildSculptedIsland(ix, iz, radius, height));
-  }
-}
-buildEnvironment();
-
+// Carrier Instance in Scene
 const carrierGroup = createCarrierGroup();
 scene.add(carrierGroup);
 
+// Sky Glide-Slope Approach Boxes Group (Carrier Mode)
 const glideBoxesGroup = new THREE.Group();
 scene.add(glideBoxesGroup);
 
+// Arrestor Cable Stretch Line (when trapped on deck)
 const trapLineGeo = new THREE.BufferGeometry().setFromPoints([
   new THREE.Vector3(-17, 20.3, 75),
   new THREE.Vector3(0, 20.3, 75),
@@ -482,8 +262,8 @@ carrierGroup.add(trapLineMesh);
 // ==========================================
 const keys = {};
 const game = {
-  state: 'HANGAR',
-  cameraMode: 'CHASE',
+  state: 'HANGAR', // 'HANGAR' | 'COMBAT' | 'CARRIER' | 'DEBRIEF'
+  cameraMode: 'CHASE', // 'CHASE' | 'COCKPIT'
   showGlideBoxes: true,
   carrierStage: 1,
   wave: 1,
@@ -530,6 +310,7 @@ const game = {
   particles: []
 };
 
+// Build Initial Player Jet Mesh
 function rebuildPlayerJetMesh(jetId) {
   if (game.player.mesh) {
     scene.remove(game.player.mesh);
@@ -555,6 +336,8 @@ function rebuildGlideSlopeBoxes(overheadBreak = false) {
     opacity: 0.68
   });
 
+  // Target touchdown on carrier is (0, 20.0, 75) in carrier-local coordinates
+  // Standard 3.5-degree glide slope: tan(3.5 deg) = 0.06116
   const slope = Math.tan(THREE.MathUtils.degToRad(3.5));
   const distances = [260, 460, 680, 920, 1180, 1450];
 
@@ -577,6 +360,7 @@ function rebuildGlideSlopeBoxes(overheadBreak = false) {
     glideBoxesGroup.add(frame);
   }
 
+  // If Stage 3 Case I Overhead Break, add amber turn-gate boxes showing the break path
   if (overheadBreak) {
     const breakMat = new THREE.LineBasicMaterial({ color: 0xf5a623 });
     const breakWaypoints = [
@@ -605,6 +389,9 @@ function rebuildGlideSlopeBoxes(overheadBreak = false) {
   }
 }
 
+// ==========================================
+// CLEAR ENTITIES HELPER
+// ==========================================
 function clearCombatEntities() {
   for (const e of game.enemies) scene.remove(e.mesh);
   for (const b of game.bullets) scene.remove(b.mesh);
@@ -634,6 +421,7 @@ function startCombatMode() {
   game.kills = 0;
   game.wavePauseTimer = 0;
 
+  // Set crisp high-altitude combat atmosphere
   setAtmosphere({
     sunElevation: 28,
     sunAzimuth: 150,
@@ -831,7 +619,7 @@ function firePlayerMissile() {
   sound.playMissileLaunch();
   const isLocked = p.lockProgress >= 1.0 && p.lockedTarget && p.lockedTarget.hp > 0;
   sound.speakRadio(
-    'RIO GOOSE',
+    'AWACS SKYEYE',
     isLocked ? `${saveData.callsign}, Fox Two! Missile tracking!` : 'Fox Two—missile away!',
     false
   );
@@ -901,7 +689,7 @@ function fireEnemyMissile(enemy) {
     spoofedByFlare: null
   });
 
-  sound.speakRadio('RIO GOOSE', 'Warning! MiG missile launch! Press G for flares and break!', false);
+  sound.speakRadio('AWACS SKYEYE', 'Warning! Bandit missile launch! Press G for flares!', false);
 }
 
 function deployPlayerFlares() {
@@ -937,6 +725,7 @@ function deployPlayerFlares() {
     };
     game.flares.push(flareObj);
 
+    // Divert any incoming enemy missiles toward this flare decoy!
     for (const m of game.missiles) {
       if (!m.isPlayer && !m.spoofedByFlare) {
         m.spoofedByFlare = flareObj;
@@ -999,18 +788,17 @@ function spawnSmokePuff(pos, size = 0.55, colorHex = 0xdce6f2, ttl = 0.55) {
 // ==========================================
 // PHYSICS & SIMULATION STEP
 // ==========================================
-let pitchInvertStick = true;
+let pitchInvertStick = true; // True = ArrowDown pulls nose UP (flight stick); press [I] to toggle
 
 function updateSimulation(dt) {
   const nowSec = performance.now() * 0.001;
 
-  if (waterMesh && waterMesh.material && waterMesh.material.uniforms) {
-    waterMesh.material.uniforms['time'].value += dt * 0.85;
-  }
+  // Advance Carrier Radar Spinner
   if (carrierGroup.userData.radarSpinner) {
     carrierGroup.userData.radarSpinner.rotation.y += dt * 1.8;
   }
 
+  // Hangar Showcase Mode
   if (game.state === 'HANGAR') {
     sound.updateEngine(0, false);
     sound.updateSeekerTone('off');
@@ -1038,10 +826,12 @@ function updateSimulation(dt) {
   const p = game.player;
   const cfg = p.config;
 
+  // Cooldowns
   p.gunCooldown = Math.max(0, p.gunCooldown - dt);
   p.missileCooldown = Math.max(0, p.missileCooldown - dt);
   p.flareCooldown = Math.max(0, p.flareCooldown - dt);
 
+  // Update Carrier Motion in Carrier Mode
   const stage = CARRIER_STAGES[game.carrierStage] || CARRIER_STAGES[1];
   if (game.state === 'CARRIER') {
     carrierGroup.position.z -= stage.carrierSpeedMps * dt;
@@ -1053,6 +843,7 @@ function updateSimulation(dt) {
     glideBoxesGroup.rotation.copy(carrierGroup.rotation);
   }
 
+  // Check if Player is Trapped on Carrier Wire (Decelerating on Deck)
   if (p.trappedWire !== null) {
     p.trapProgress += dt;
     p.speedKts = Math.max(0, p.speedKts - 98 * dt);
@@ -1065,6 +856,7 @@ function updateSimulation(dt) {
     p.mesh.position.copy(p.pos);
     updateJetVisuals(p.mesh, p.speedKts, 0, true, 0, 0);
 
+    // Update stretched arrestor wire line from port/starboard sheaves to tailhook
     const wireZ = carrierGroup.userData.wirePositionsZ[p.trappedWire - 1];
     const localHookZ = p.pos.z - carrierGroup.position.z + 4.8;
     const posArr = trapLineGeo.attributes.position;
@@ -1084,12 +876,14 @@ function updateSimulation(dt) {
   // ==========================================
   // KEYBOARD FLIGHT CONTROLS (ARCADE-PLUS)
   // ==========================================
+  // Throttle: W / S
   if (keys['KeyW']) {
     p.throttle = Math.min(1.0, p.throttle + 0.42 * dt);
   } else if (keys['KeyS']) {
     p.throttle = Math.max(0.05, p.throttle - 0.48 * dt);
   }
 
+  // Target Airspeed based on Throttle, Gear Drag, and Pitch Climb/Dive
   const maxSpd = p.gearDown ? Math.min(265, cfg.maxSpeedKts * 0.45) : cfg.maxSpeedKts;
   const minSpd = cfg.minSpeedKts;
   const targetSpd = minSpd + p.throttle * (maxSpd - minSpd) - Math.sin(p.pitch) * 48;
@@ -1098,6 +892,7 @@ function updateSimulation(dt) {
 
   sound.updateEngine(p.throttle, true);
 
+  // Pitch, Roll, Yaw Inputs
   let pitchInput = 0;
   if (keys['ArrowDown']) pitchInput += pitchInvertStick ? 1 : -1;
   if (keys['ArrowUp']) pitchInput += pitchInvertStick ? -1 : 1;
@@ -1110,6 +905,7 @@ function updateSimulation(dt) {
   if (keys['KeyA']) yawInput += 1;
   if (keys['KeyD']) yawInput -= 1;
 
+  // Apply Angular Rotations in Local Aircraft Frame
   const dPitch = pitchInput * cfg.pitchRate * dt;
   const dRoll = rollInput * cfg.rollRate * dt;
   const dYaw = yawInput * cfg.yawRate * dt;
@@ -1117,17 +913,21 @@ function updateSimulation(dt) {
   const qDelta = new THREE.Quaternion().setFromEuler(new THREE.Euler(dPitch, dYaw, dRoll, 'YXZ'));
   p.quat.multiply(qDelta).normalize();
 
+  // Extract Euler Angles to apply Arcade-Plus Bank-to-Turn & Gentle Auto-Leveling
   const euler = new THREE.Euler().setFromQuaternion(p.quat, 'YXZ');
   p.pitch = THREE.MathUtils.clamp(euler.x, -Math.PI * 0.46, Math.PI * 0.46);
   p.yaw = euler.y;
   p.roll = euler.z;
 
+  // Natural Coordinated Turn: Banking rolls the nose smoothly into the turn
   const bankTurnRate = Math.sin(p.roll) * 0.62 * dt;
   p.yaw += bankTurnRate;
 
+  // Gentle Auto-Leveling when no Roll key is pressed and bank is mild (< 25 deg)
   if (rollInput === 0 && Math.abs(p.roll) < 0.45) {
     p.roll *= Math.pow(0.18, dt);
   }
+  // Gentle Pitch Stabilization toward level/glide slope when no Pitch key pressed
   if (pitchInput === 0 && Math.abs(p.roll) < 0.35) {
     const restPitch = game.state === 'CARRIER' && p.gearDown ? -0.052 : 0.0;
     p.pitch += (restPitch - p.pitch) * Math.min(1, dt * 0.75);
@@ -1135,14 +935,17 @@ function updateSimulation(dt) {
 
   p.quat.setFromEuler(new THREE.Euler(p.pitch, p.yaw, p.roll, 'YXZ'));
 
+  // Compute G-Load & Angle of Attack (AoA)
   p.gLoad = +(1.0 + pitchInput * (p.speedKts / 145) * 3.2 + Math.abs(Math.sin(p.roll)) * 1.1).toFixed(1);
   const idealSpd = cfg.idealApproachKts;
   p.aoaDeg = +(8.1 + (idealSpd - p.speedKts) * 0.14 + pitchInput * 3.5).toFixed(1);
 
+  // Move Player Position
   const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat).normalize();
   const speedMps = p.speedKts * 0.5144;
   p.vel.copy(forward).multiplyScalar(speedMps);
 
+  // Add Wind & Turbulence in Carrier Mode
   if (game.state === 'CARRIER') {
     p.vel.add(stage.windVec);
     if (stage.turbulence > 0) {
@@ -1155,15 +958,11 @@ function updateSimulation(dt) {
   p.pos.addScaledVector(p.vel, dt);
   p.verticalSpeedFps = ((p.pos.y - prevY) / Math.max(0.001, dt)) * 3.28084;
 
-  waterMesh.position.x = Math.floor(p.pos.x / 600) * 600;
-  waterMesh.position.z = Math.floor(p.pos.z / 600) * 600;
-  sky.position.x = p.pos.x;
-  sky.position.z = p.pos.z;
-
   p.mesh.position.copy(p.pos);
   p.mesh.quaternion.copy(p.quat);
   updateJetVisuals(p.mesh, p.speedKts, p.throttle, p.gearDown, pitchInput, rollInput);
 
+  // Wingtip Contrails during high-G turns or high speed
   if (Math.abs(p.gLoad) > 2.5 || p.speedKts > 480) {
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat).normalize();
     for (const side of [-5.8, 5.8]) {
@@ -1171,11 +970,13 @@ function updateSimulation(dt) {
     }
   }
 
+  // Player Weapons Trigger
   if (keys['Space']) {
     firePlayerCannon();
   }
 
   // Top Gun "Buzz the Tower" Flyby Detection!
+  // Carrier Island Tower is at carrierGroup.position + (27, 44, -24)
   const towerWorldPos = new THREE.Vector3(
     carrierGroup.position.x + 27,
     44,
@@ -1204,14 +1005,17 @@ function updateSimulation(dt) {
     );
   }
 
+  // Update Projectiles, Missiles, Flares & Particles
   updateProjectilesAndParticles(dt);
 
+  // Mode-Specific Logic
   if (game.state === 'COMBAT') {
     updateCombatMode(dt);
   } else if (game.state === 'CARRIER') {
     updateCarrierApproach(dt);
   }
 
+  // Check Sea / Water Impact
   if (p.pos.y < 1.8) {
     spawnExplosion(p.pos, 1.8);
     if (game.state === 'CARRIER') {
@@ -1243,6 +1047,7 @@ function updateSimulation(dt) {
 function updateProjectilesAndParticles(dt) {
   const p = game.player;
 
+  // Bullets
   for (let i = game.bullets.length - 1; i >= 0; i--) {
     const b = game.bullets[i];
     b.ttl -= dt;
@@ -1280,6 +1085,7 @@ function updateProjectilesAndParticles(dt) {
     }
   }
 
+  // Flares
   for (let i = game.flares.length - 1; i >= 0; i--) {
     const f = game.flares[i];
     f.ttl -= dt;
@@ -1295,11 +1101,13 @@ function updateProjectilesAndParticles(dt) {
     }
   }
 
+  // Missiles
   let incomingEnemyMissile = false;
   for (let i = game.missiles.length - 1; i >= 0; i--) {
     const m = game.missiles[i];
     m.ttl -= dt;
 
+    // Guidance steering
     const targetObj = m.spoofedByFlare || m.target;
     if (targetObj && m.turnRate > 0) {
       const targetPos = targetObj.pos;
@@ -1351,6 +1159,7 @@ function updateProjectilesAndParticles(dt) {
     }
   }
 
+  // Incoming Missile Warning Banner & Audio Beep
   const alertBanner = document.getElementById('alert-warning-banner');
   if (incomingEnemyMissile && game.state === 'COMBAT') {
     alertBanner.classList.remove('hidden');
@@ -1359,6 +1168,7 @@ function updateProjectilesAndParticles(dt) {
     alertBanner.classList.add('hidden');
   }
 
+  // Explosion & Smoke Particles
   for (let i = game.particles.length - 1; i >= 0; i--) {
     const pt = game.particles[i];
     pt.ttl -= dt;
@@ -1410,6 +1220,7 @@ function destroyEnemy(enemy) {
 function updateCombatMode(dt) {
   const p = game.player;
 
+  // Check if Wave Cleared
   if (game.enemies.length === 0) {
     sound.updateSeekerTone('off');
     if (game.wavePauseTimer === 0) {
@@ -1422,7 +1233,7 @@ function updateCombatMode(dt) {
       p.flares = p.config.flares;
       p.hull = Math.min(100, p.hull + 35);
       sound.speakRadio(
-        'VIPER COMMAND',
+        'AWACS SKYEYE',
         `Wave ${game.wave} cleared! Missiles & flares replenished, hull repaired. Wave ${nextWave} inbound!`,
         true
       );
@@ -1435,6 +1246,7 @@ function updateCombatMode(dt) {
     return;
   }
 
+  // Update Enemy AI
   for (const e of game.enemies) {
     const toPlayer = p.pos.clone().sub(e.pos);
     const dist = toPlayer.length();
@@ -1460,6 +1272,7 @@ function updateCombatMode(dt) {
     e.quat.copy(e.mesh.quaternion);
     updateJetVisuals(e.mesh, e.speedKts, 0.85, false, 0.2, 0);
 
+    // Enemy Gun Burst when aligned at medium-close range
     e.gunTimer -= dt;
     if (e.gunTimer <= 0 && dist < 680 && curDir.dot(toPlayer.clone().normalize()) > 0.92) {
       e.gunTimer = 1.4 + Math.random() * 1.2;
@@ -1476,6 +1289,7 @@ function updateCombatMode(dt) {
       });
     }
 
+    // Enemy Missile Launch
     e.missileTimer -= dt;
     if (e.missileTimer <= 0) {
       e.missileTimer = 8.5 + Math.random() * 5.0;
@@ -1483,6 +1297,7 @@ function updateCombatMode(dt) {
     }
   }
 
+  // Player AIM-9X Seeker Lock-On Calculation
   const playerForward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat).normalize();
   let bestCandidate = null;
   let bestDot = 0.84;
@@ -1751,6 +1566,7 @@ function renderAvionicsHUD() {
   ctxHUD.lineWidth = 1.6;
   ctxHUD.font = '600 13px "JetBrains Mono", monospace';
 
+  // 1. Central Aircraft Bore-Sight Crosshair ("W" Waterline Symbol)
   ctxHUD.beginPath();
   ctxHUD.moveTo(cx - 18, cy);
   ctxHUD.lineTo(cx - 7, cy);
@@ -1761,6 +1577,7 @@ function renderAvionicsHUD() {
   ctxHUD.lineTo(cx + 18, cy);
   ctxHUD.stroke();
 
+  // 2. Velocity Vector (Flight Path Marker)
   const velTarget = p.pos.clone().add(p.vel.clone().normalize().multiplyScalar(200));
   const fpm = projectWorldToScreen(velTarget);
   if (fpm.inFront) {
@@ -1777,6 +1594,7 @@ function renderAvionicsHUD() {
     ctxHUD.stroke();
   }
 
+  // 3. Pitch Ladder & Artificial Horizon
   ctxHUD.save();
   ctxHUD.translate(cx, cy);
   ctxHUD.rotate(-p.roll);
@@ -1807,6 +1625,7 @@ function renderAvionicsHUD() {
   }
   ctxHUD.restore();
 
+  // 4. Airspeed Tape & Altitude Tape
   const spdKts = Math.round(p.speedKts);
   const altFt = Math.max(0, Math.round(p.pos.y * 3.28084));
 
@@ -1822,11 +1641,13 @@ function renderAvionicsHUD() {
   ctxHUD.font = '500 11px "JetBrains Mono", monospace';
   ctxHUD.fillText('FT', cx + 222, cy + 5);
 
+  // 5. Compass Heading Tape at Top
   const hdgDeg = ((Math.round(THREE.MathUtils.radToDeg(-p.yaw)) % 360) + 360) % 360;
   ctxHUD.strokeRect(cx - 32, 54, 64, 24);
   ctxHUD.font = '700 13px "JetBrains Mono", monospace';
   ctxHUD.fillText(`HDG ${String(hdgDeg).padStart(3, '0')}`, cx - 27, 71);
 
+  // 6. Tactical Radar Minimap
   const radarX = 88;
   const radarY = 128;
   const radarR = 58;
@@ -1856,6 +1677,7 @@ function renderAvionicsHUD() {
     ctxHUD.fillRect(radarX + cRx - 3, radarY + cRz - 5, 6, 10);
   }
 
+  // Enemies on Radar & 3D Target Reticles (Mode 1: Combat)
   if (game.state === 'COMBAT') {
     ctxHUD.strokeStyle = 'hsla(146, 86%, 54%, 0.35)';
     ctxHUD.beginPath();
@@ -1935,6 +1757,7 @@ function renderAvionicsHUD() {
     }
   }
 
+  // 7. Carrier Approach IFLOLS "Meatball" & AoA Indexer
   if (game.state === 'CARRIER') {
     const TouchdownWorld = new THREE.Vector3(
       carrierGroup.position.x,
@@ -2028,7 +1851,7 @@ function updateTelemetryDOM() {
   const modeLabel = document.getElementById('hud-mode-label');
   const waveVal = document.getElementById('hud-wave-val');
   if (game.state === 'COMBAT') {
-    modeLabel.textContent = 'DANGER ZONE';
+    modeLabel.textContent = 'WAVE SURVIVAL';
     waveVal.textContent = `WAVE ${game.wave} • ${game.score} PTS`;
   } else {
     modeLabel.textContent = 'CARRIER TRAP';
@@ -2092,6 +1915,7 @@ function showDebriefModal({ badge, title, subtitle, metrics, canAdvance }) {
   document.getElementById('debrief-title').textContent = title;
   document.getElementById('debrief-subtitle').textContent = subtitle;
 
+  // Build metrics grid safely using createElement and textContent (zero innerHTML)
   const container = document.getElementById('debrief-metrics');
   container.replaceChildren();
   for (const [label, value] of metrics) {
@@ -2138,6 +1962,7 @@ function saveCallsignFromInput() {
 document.getElementById('btn-save-callsign').addEventListener('click', saveCallsignFromInput);
 document.getElementById('input-pilot-callsign').addEventListener('change', saveCallsignFromInput);
 
+// Top Gun Callsign Preset Pills
 document.querySelectorAll('.preset-pill').forEach((pill) => {
   pill.addEventListener('click', () => {
     sound.init();
@@ -2315,6 +2140,9 @@ function handleResize() {
 window.addEventListener('resize', handleResize);
 handleResize();
 
+// ==========================================
+// MAIN ANIMATION LOOP
+// ==========================================
 let lastFrameTime = performance.now();
 
 function animate(now) {
@@ -2323,6 +2151,7 @@ function animate(now) {
   lastFrameTime = now;
 
   updateSimulation(dt);
+  envSystem.update(dt, camera.position, carrierGroup.position);
   renderer.render(scene, camera);
   renderAvionicsHUD();
 }
