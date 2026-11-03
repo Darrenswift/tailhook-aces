@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self';" />
+  <title>TAILHOOK ACES — 3D Naval Jet Fighter &amp; Carrier Landing Simulator</title>
+  <meta name="description" content="3D browser-based naval jet fighter game featuring Air-to-Air Wave Survival combat and a 5-stage Carrier Landing Challenge ladder." />
+  <link rel="stylesheet" href="./index.css" />
+</head>
+<body>
+  <!-- 3D WebGL Scene Canvas -->
+  <canvas id="game-canvas" aria-label="3D Flight Combat Viewport"></canvas>
+  <!-- 2D Avionics HUD Overlay Canvas -->
+  <canvas id="hud-canvas" aria-label="Avionics Heads-Up Display"></canvas>
+
+  <!-- Persistent Top Status Bar -->
+  <header class="top-status-bar" id="top-status-bar">
+    <div class="top-status-group">
+      <div class="tactical-tag" id="pilot-badge-display">
+        <span>PILOT CALLSIGN:</span>
+        <strong id="active-callsign-label">MAVERICK JR</strong>
+      </div>
+      <div class="tactical-tag" id="active-aircraft-tag">
+        <span>AIRCRAFT:</span>
+        <strong id="active-jet-label">F/A-18E SUPER HORNET</strong>
+      </div>
+    </div>
+    <div class="top-status-group">
+      <button type="button" class="icon-btn" id="btn-toggle-camera" title="Switch Chase / Cockpit HUD View (C)">
+        CAM: CHASE [C]
+      </button>
+      <button type="button" class="icon-btn" id="btn-toggle-audio" title="Mute / Unmute Synthesized Audio (M)">
+        AUDIO: ON [M]
+      </button>
+      <button type="button" class="icon-btn hidden" id="btn-abort-mission" title="Return to Carrier Hangar (ESC)">
+        HANGAR [ESC]
+      </button>
+    </div>
+  </header>
+
+  <!-- Carrier Hangar / Main Menu -->
+  <main class="hangar-overlay" id="hangar-screen">
+    <!-- Left Column: Pilot Callsign & Aircraft Selection -->
+    <section class="hangar-column" aria-label="Pilot and Aircraft Selection">
+      <div class="callsign-box">
+        <label class="section-label" for="input-pilot-callsign">Pilot Callsign</label>
+        <div class="callsign-input-row">
+          <input
+            type="text"
+            id="input-pilot-callsign"
+            class="callsign-input"
+            maxlength="16"
+            value="MAVERICK JR"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Enter Pilot Callsign"
+          />
+          <button type="button" class="icon-btn" id="btn-save-callsign">SET</button>
+        </div>
+      </div>
+
+      <div class="section-label">Select Carrier Fighter</div>
+      <div class="jet-selector-list" id="jet-selector-list">
+        <!-- F/A-18E Super Hornet -->
+        <button type="button" class="jet-card active" id="btn-select-f18" data-jet="f18">
+          <div class="jet-card-header">
+            <span class="jet-card-title">F/A-18E Super Hornet</span>
+            <span class="jet-card-role">All-Rounder</span>
+          </div>
+          <p class="jet-card-desc">Rock-steady carrier approach handling with balanced dogfight turn rate and 8 AIM-9X missiles.</p>
+          <div class="jet-stats-grid">
+            <div class="stat-item">
+              <span class="stat-label">SPEED</span>
+              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 82%"></div></div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">AGILITY</span>
+              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 85%"></div></div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">MISSILES</span>
+              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 80%"></div></div>
+            </div>
+          </div>
+        </button>
+
+        <!-- F-14D Super Tomcat -->
+        <button type="button" class="jet-card" id="btn-select-f14" data-jet="f14">
+          <div class="jet-card-header">
+            <span class="jet-card-title">F-14D Super Tomcat</span>
+            <span class="jet-card-role">Swing-Wing Interceptor</span>
+          </div>
+          <p class="jet-card-desc">Automatic variable-sweep wings, blistering Mach 2+ afterburner speed, and heavy 10-missile payload.</p>
+          <div class="jet-stats-grid">
+            <div class="stat-item">
+              <span class="stat-label">SPEED</span>
+              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 98%"></div></div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">AGILITY</span>
+              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 75%"></div></div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">MISSILES</span>
+              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%"></div></div>
+            </div>
+          </div>
+        </button>
+
+        <!-- F-35C Lightning II -->
+        <button type="button" class="jet-card" id="btn-select-f35" data-jet="f35">
+          <div class="jet-card-header">
+            <span class="jet-card-title">F-35C Lightning II</span>
+            <span class="jet-card-role">Stealth Dogfighter</span>
+          </div>
+          <p class="jet-card-desc">High-alpha agility, rapid missile seeker lock-on speed, and stable delta-wing carrier glide slope.</p>
+          <div class="jet-stats-grid">
+            <div class="stat-item">
+              <span class="stat-label">SPEED</span>
+              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 84%"></div></div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">AGILITY</span>
+              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 96%"></div></div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">MISSILES</span>
+              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 75%"></div></div>
+            </div>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- Center Column: 3D Rotating Aircraft Showcase -->
+    <section class="hangar-center-showcase" aria-label="Aircraft 3D Showcase">
+      <div class="brand-header">
+        <h1>TAILHOOK ACES</h1>
+        <div class="brand-subtitle">CVN-68 Naval Air Wing Tactical Simulator</div>
+      </div>
+      <div class="jet-showcase-caption">
+        <h2 id="showcase-jet-name">F/A-18E SUPER HORNET</h2>
+        <p id="showcase-jet-tagline">Twin-Engine Carrier Strike Fighter • M61 Vulcan 20mm + AIM-9X Sidewinders</p>
+      </div>
+    </section>
+
+    <!-- Right Column: Separate Game Modes -->
+    <section class="hangar-column" aria-label="Mission Mode Selection">
+      <div class="section-label">Mode 1: Air-to-Air Combat</div>
+      <div class="mode-block">
+        <div class="mode-block-header">
+          <span class="mode-block-title">Wave Survival Dogfight</span>
+          <span class="mode-record" id="combat-high-score-label">BEST: WAVE 1 • 0 PTS</span>
+        </div>
+        <p class="mode-desc">
+          Engage escalating waves of enemy MiG-29s, heavy strike bombers, and Su-33 Ace Boss Squadrons every 3rd wave. Automatic missile/flare resupply and hull repair between waves.
+        </p>
+        <button type="button" class="primary-launch-btn" id="btn-launch-combat">
+          SCRAMBLE AIR-TO-AIR COMBAT
+        </button>
+      </div>
+
+      <div class="section-label">Mode 2: Carrier Landing Challenges</div>
+      <div class="mode-block">
+        <div class="mode-block-header">
+          <span class="mode-block-title">5-Stage Tailhook Ladder</span>
+          <span class="mode-record">TARGET: #3 WIRE (~138 KTS)</span>
+        </div>
+        <p class="mode-desc">
+          Deploy gear &amp; tailhook (<strong>L</strong>), keep the Meatball centered, and trap on the angled flight deck.
+        </p>
+        <div class="stage-ladder-list" id="carrier-stage-list">
+          <button type="button" class="stage-btn" id="btn-carrier-stage-1" data-stage="1">
+            <div class="stage-btn-left">
+              <span class="stage-btn-title">Stage 1: Straight-In Calm Day</span>
+              <span class="stage-btn-sub">3.5 NM Final • Calm Seas • Clear Sky</span>
+            </div>
+            <span class="stage-grade-badge" id="badge-stage-1">UNFLOWN</span>
+          </button>
+
+          <button type="button" class="stage-btn" id="btn-carrier-stage-2" data-stage="2">
+            <div class="stage-btn-left">
+              <span class="stage-btn-title">Stage 2: Moving Deck &amp; Crosswind</span>
+              <span class="stage-btn-sub">22 KT Crosswind • Steaming Carrier (25 KTS)</span>
+            </div>
+            <span class="stage-grade-badge" id="badge-stage-2">UNFLOWN</span>
+          </button>
+
+          <button type="button" class="stage-btn" id="btn-carrier-stage-3" data-stage="3">
+            <div class="stage-btn-left">
+              <span class="stage-btn-title">Stage 3: Case I Overhead Break</span>
+              <span class="stage-btn-sub">Pass Carrier at 800 FT / 350 KTS • 180° Break Turn</span>
+            </div>
+            <span class="stage-grade-badge" id="badge-stage-3">UNFLOWN</span>
+          </button>
+
+          <button type="button" class="stage-btn" id="btn-carrier-stage-4" data-stage="4">
+            <div class="stage-btn-left">
+              <span class="stage-btn-title">Stage 4: Sunset Heavy Seas</span>
+              <span class="stage-btn-sub">Pitching Flight Deck • Gusting Turbulence</span>
+            </div>
+            <span class="stage-grade-badge" id="badge-stage-4">UNFLOWN</span>
+          </button>
+
+          <button type="button" class="stage-btn" id="btn-carrier-stage-5" data-stage="5">
+            <div class="stage-btn-left">
+              <span class="stage-btn-title">Stage 5: Night &amp; Fog Instrument Trap</span>
+              <span class="stage-btn-sub">Low Visibility • Illuminated Deck &amp; HUD Approach</span>
+            </div>
+            <span class="stage-grade-badge" id="badge-stage-5">UNFLOWN</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Keyboard Flight Controls Reference -->
+    <footer class="hangar-controls-bar" aria-label="Keyboard Flight Controls">
+      <div class="key-hint"><span class="kbd-tag">↑ / ↓</span> Pitch Down / Up</div>
+      <div class="key-hint"><span class="kbd-tag">← / →</span> Roll Left / Right</div>
+      <div class="key-hint"><span class="kbd-tag">W / S</span> Throttle / Airbrake</div>
+      <div class="key-hint"><span class="kbd-tag">A / D</span> Rudder Yaw</div>
+      <div class="key-hint"><span class="kbd-tag">SPACE</span> 20mm Vulcan Cannon</div>
+      <div class="key-hint"><span class="kbd-tag">F</span> Fire AIM-9X Missile</div>
+      <div class="key-hint"><span class="kbd-tag">G</span> Drop Flares</div>
+      <div class="key-hint"><span class="kbd-tag">L</span> Gear &amp; Tailhook</div>
+      <div class="key-hint"><span class="kbd-tag">C</span> Cockpit / Chase Cam</div>
+      <div class="key-hint"><span class="kbd-tag">H</span> Toggle Sky Approach Boxes</div>
+    </footer>
+  </main>
+
+  <!-- In-Flight Tactical Telemetry Panels -->
+  <aside id="flight-ui" class="hidden" aria-label="In-Flight Telemetry">
+    <div id="radio-comms-banner" class="radio-comms-banner hidden">
+      <span id="radio-sender" class="radio-sender">[AWACS]</span>
+      <span id="radio-text" class="radio-text">Cleared for combat patrol.</span>
+    </div>
+
+    <div id="alert-warning-banner" class="alert-warning-banner hidden">
+      MISSILE LAUNCH DETECTED — PRESS [G] FOR FLARES &amp; EVADE!
+    </div>
+
+    <div class="hud-bottom-left">
+      <div class="hud-Bottom-row">
+        <span class="hud-label">THROTTLE</span>
+        <span class="hud-val" id="hud-throttle-val">75% MIL</span>
+      </div>
+      <div class="hud-Bottom-row">
+        <span class="hud-label">HULL INTEGRITY</span>
+        <span class="hud-val" id="hud-hull-val">100%</span>
+      </div>
+      <div class="hud-Bottom-row">
+        <span class="hud-label">GEAR / HOOK</span>
+        <span class="hud-val" id="hud-gear-val">UP [L]</span>
+      </div>
+      <div class="hud-Bottom-row">
+        <span class="hud-label">G-LOAD / AOA</span>
+        <span class="hud-val" id="hud-g-val">1.0G • 4.2°</span>
+      </div>
+    </div>
+
+    <div class="in-flight-help-strip" id="in-flight-help-strip">
+      [↑/↓] Pitch • [←/→] Roll • [W/S] Throttle • [A/D] Yaw • [SPACE] Guns • [F] Missile • [G] Flares • [L] Gear/Hook • [C] View
+    </div>
+
+    <div class="hud-bottom-right">
+      <div class="hud-Bottom-row">
+        <span class="hud-label" id="hud-mode-label">WAVE SURVIVAL</span>
+        <span class="hud-val" id="hud-wave-val">WAVE 1</span>
+      </div>
+      <div class="hud-Bottom-row">
+        <span class="hud-label">20MM VULCAN</span>
+        <span class="hud-val" id="hud-gun-val">READY [SPACE]</span>
+      </div>
+      <div class="hud-Bottom-row">
+        <span class="hud-label">AIM-9X SIDEWINDER</span>
+        <span class="hud-val" id="hud-missile-val">8 [F]</span>
+      </div>
+      <div class="hud-Bottom-row">
+        <span class="hud-label">FLARE DECOYS</span>
+        <span class="hud-val" id="hud-flare-val">12 [G]</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Post-Mission / Carrier Trap Debrief Modal -->
+  <section id="debrief-modal" class="modal-backdrop hidden" aria-label="Mission Debrief Scorecard">
+    <div class="debrief-card">
+      <div class="debrief-header">
+        <div class="debrief-badge" id="debrief-badge">LSO LANDING GRADE REPORT</div>
+        <h2 class="debrief-title" id="debrief-title">OK 3-WIRE!</h2>
+        <p class="debrief-subtitle" id="debrief-subtitle">Textbook carrier arrestment right on the target wire.</p>
+      </div>
+      <div class="debrief-metrics" id="debrief-metrics"></div>
+      <div class="debrief-actions">
+        <button type="button" class="secondary-btn" id="btn-debrief-retry">FLY AGAIN</button>
+        <button type="button" class="primary-launch-btn" id="btn-debrief-next" style="flex: 1">NEXT STAGE</button>
+        <button type="button" class="secondary-btn" id="btn-debrief-hangar">HANGAR</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
