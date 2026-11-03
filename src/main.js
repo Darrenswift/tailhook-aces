@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SoundSystem } from './audio.js';
-import { JET_CONFIGS, createJetMesh, updateJetVisuals, createCarrierGroup } from './jets.js';
+import { JET_CONFIGS, createJetMesh, updateJetVisuals, createCarrierGroup, createCockpitInteriorGroup } from './jets.js';
 import { createRealisticEnvironment } from './environment.js';
 
 // ==========================================
@@ -177,8 +177,7 @@ const ctxHUD = canvasHUD.getContext('2d');
 
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas3D,
-  antialias: true,
-  powerPreference: 'high-performance'
+  antialias: true
 });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -194,7 +193,7 @@ const camera = new THREE.PerspectiveCamera(
   60,
   window.innerWidth / window.innerHeight,
   0.5,
-  24000
+  32000
 );
 
 // Hemisphere + Directional Sun Lighting
@@ -242,6 +241,11 @@ setAtmosphere(CARRIER_STAGES[1]);
 const carrierGroup = createCarrierGroup();
 scene.add(carrierGroup);
 
+// 3D First-Person Cockpit Glareshield & Canopy Frame
+const cockpitInteriorGroup = createCockpitInteriorGroup();
+cockpitInteriorGroup.visible = false;
+scene.add(cockpitInteriorGroup);
+
 // Sky Glide-Slope Approach Boxes Group (Carrier Mode)
 const glideBoxesGroup = new THREE.Group();
 scene.add(glideBoxesGroup);
@@ -263,7 +267,7 @@ carrierGroup.add(trapLineMesh);
 const keys = {};
 const game = {
   state: 'HANGAR', // 'HANGAR' | 'COMBAT' | 'CARRIER' | 'DEBRIEF'
-  cameraMode: 'CHASE', // 'CHASE' | 'COCKPIT'
+  cameraMode: 'CHASE', // 'CHASE' | 'COCKPIT' | 'LSO'
   showGlideBoxes: true,
   carrierStage: 1,
   wave: 1,
@@ -457,8 +461,9 @@ function startCombatMode() {
 
   updateUIOverlays();
   spawnCombatWave(1);
+  const radioCaller = cfg.id === 'f14' ? 'RIO GOOSE' : 'TOPGUN VIPER';
   sound.speakRadio(
-    'RIO GOOSE',
+    radioCaller,
     `Talk to me, ${saveData.callsign}! Welcome to the Danger Zone—MiG-28s inbound, weapons free!`,
     true
   );
@@ -802,15 +807,17 @@ function updateSimulation(dt) {
   if (game.state === 'HANGAR') {
     sound.updateEngine(0, false);
     sound.updateSeekerTone('off');
+    cockpitInteriorGroup.visible = false;
     carrierGroup.position.set(0, 0, 0);
     carrierGroup.rotation.set(0, 0, 0);
 
     const p = game.player;
+    p.mesh.visible = true;
     p.pos.set(0, 21.38, 65);
     p.quat.setFromEuler(new THREE.Euler(0.02, nowSec * 0.45, 0, 'YXZ'));
     p.mesh.position.copy(p.pos);
     p.mesh.quaternion.copy(p.quat);
-    updateJetVisuals(p.mesh, 380, 0.86, true, Math.sin(nowSec * 1.5) * 0.3, Math.cos(nowSec * 1.2) * 0.3);
+    updateJetVisuals(p.mesh, 0, 0, true, Math.sin(nowSec * 1.5) * 0.3, Math.cos(nowSec * 1.2) * 0.3);
 
     camera.position.set(Math.sin(nowSec * 0.25) * 16.5, 24.8, 84);
     camera.lookAt(0, 21.6, 65);
@@ -935,10 +942,11 @@ function updateSimulation(dt) {
 
   p.quat.setFromEuler(new THREE.Euler(p.pitch, p.yaw, p.roll, 'YXZ'));
 
-  // Compute G-Load & Angle of Attack (AoA)
+  // Compute G-Load & Clamped Realistic Angle of Attack (AoA)
   p.gLoad = +(1.0 + pitchInput * (p.speedKts / 145) * 3.2 + Math.abs(Math.sin(p.roll)) * 1.1).toFixed(1);
   const idealSpd = cfg.idealApproachKts;
-  p.aoaDeg = +(8.1 + (idealSpd - p.speedKts) * 0.14 + pitchInput * 3.5).toFixed(1);
+  const baseAoa = THREE.MathUtils.clamp(8.1 + (idealSpd - p.speedKts) * 0.032, 1.5, 14.5);
+  p.aoaDeg = +THREE.MathUtils.clamp(baseAoa + pitchInput * 4.5, -3.5, 22.0).toFixed(1);
 
   // Move Player Position
   const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat).normalize();
@@ -1506,19 +1514,54 @@ function finishCombatGameOver(reason) {
 }
 
 // ==========================================
-// CAMERA CONTROLLER (CHASE & COCKPIT HUD)
+// CAMERA CONTROLLER (CHASE, COCKPIT 3D & LSO DECK CAM)
 // ==========================================
+function cycleCameraMode() {
+  const order = ['CHASE', 'COCKPIT', 'LSO'];
+  const nextIdx = (order.indexOf(game.cameraMode) + 1) % order.length;
+  game.cameraMode = order[nextIdx];
+  document.getElementById('btn-toggle-camera').textContent = `CAM: ${game.cameraMode} [C]`;
+}
+
 function updateCamera(dt) {
   const p = game.player;
   if (game.cameraMode === 'COCKPIT') {
     p.mesh.visible = false;
+    cockpitInteriorGroup.visible = true;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat);
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(p.quat);
     const camPos = p.pos.clone().addScaledVector(up, 0.85).addScaledVector(forward, 1.5);
     camera.position.copy(camPos);
     camera.quaternion.copy(p.quat);
+    cockpitInteriorGroup.position.copy(camPos);
+    cockpitInteriorGroup.quaternion.copy(p.quat);
+  } else if (game.cameraMode === 'LSO') {
+    p.mesh.visible = true;
+    cockpitInteriorGroup.visible = false;
+    if (game.state === 'CARRIER') {
+      // LSO Platform Camera on Port Quarter of the Flight Deck watching the approach & trap!
+      camera.position.set(
+        carrierGroup.position.x - 21.0,
+        carrierGroup.userData.deckY + 3.4,
+        carrierGroup.position.z + 68.0
+      );
+      camera.lookAt(p.pos);
+    } else {
+      // Tactical Flyby / Wingman Action Camera in Combat Mode
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat);
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat);
+      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(p.quat);
+      const desiredCamPos = p.pos
+        .clone()
+        .addScaledVector(forward, 16.0)
+        .addScaledVector(right, 11.5)
+        .addScaledVector(up, 3.2);
+      camera.position.lerp(desiredCamPos, Math.min(1, dt * 10.0));
+      camera.lookAt(p.pos);
+    }
   } else {
     p.mesh.visible = true;
+    cockpitInteriorGroup.visible = false;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat);
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(p.quat);
     const desiredCamPos = p.pos
@@ -1535,6 +1578,9 @@ function updateCamera(dt) {
     game.cameraShake = Math.max(0, game.cameraShake - dt * 1.4);
     camera.position.x += (Math.random() - 0.5) * game.cameraShake * 1.2;
     camera.position.y += (Math.random() - 0.5) * game.cameraShake * 1.2;
+    if (cockpitInteriorGroup.visible) {
+      cockpitInteriorGroup.position.copy(camera.position);
+    }
   }
 }
 
@@ -1681,7 +1727,7 @@ function renderAvionicsHUD() {
   if (game.state === 'COMBAT') {
     ctxHUD.strokeStyle = 'hsla(146, 86%, 54%, 0.35)';
     ctxHUD.beginPath();
-    ctxHUD.arc(cx, cy, 145, 0, Math.PI * 2);
+    ctxHUD.arc(cx, cy, 132, 0, Math.PI * 2);
     ctxHUD.stroke();
 
     for (const e of game.enemies) {
@@ -1709,7 +1755,9 @@ function renderAvionicsHUD() {
 
         ctxHUD.strokeRect(scr.x - 18, scr.y - 18, 36, 36);
         ctxHUD.font = '600 11px "JetBrains Mono", monospace';
-        ctxHUD.fillText(`${e.label} ${distMeters}M`, scr.x - 28, scr.y - 24);
+        const labelX = THREE.MathUtils.clamp(scr.x - 28, 24, w - 165);
+        const labelY = THREE.MathUtils.clamp(scr.y - 24, 34, h - 42);
+        ctxHUD.fillText(`${e.label} ${distMeters}M`, labelX, labelY);
 
         ctxHUD.fillRect(scr.x - 18, scr.y + 22, 36 * (e.hp / e.maxHp), 3);
 
@@ -1721,7 +1769,8 @@ function renderAvionicsHUD() {
           }
           if (isFullLock) {
             ctxHUD.font = '700 12px "JetBrains Mono", monospace';
-            ctxHUD.fillText('SHOOT [F]', scr.x - 30, scr.y + 38);
+            const shootX = THREE.MathUtils.clamp(scr.x - 30, 24, w - 95);
+            ctxHUD.fillText('SHOOT [F]', shootX, scr.y + 38);
           }
 
           if (distMeters < 1100) {
@@ -1744,9 +1793,13 @@ function renderAvionicsHUD() {
           scr.inFront ? scr.y - cy : cy - scr.y,
           scr.inFront ? scr.x - cx : cx - scr.x
         );
-        const arrowR = 175;
+        const arrowR = 132;
         const ax = cx + Math.cos(angle) * arrowR;
-        const ay = cy + Math.sin(angle) * arrowR;
+        let ay = cy + Math.sin(angle) * arrowR;
+        // Avoid overlapping the KTS / FT airspeed & altitude boxes near cy
+        if (Math.abs(ay - cy) < 28) {
+          ay = ay < cy ? cy - 32 : cy + 32;
+        }
         ctxHUD.fillStyle = '#f5a623';
         ctxHUD.beginPath();
         ctxHUD.arc(ax, ay, 6, 0, Math.PI * 2);
@@ -1773,55 +1826,60 @@ function renderAvionicsHUD() {
       ctxHUD.fillText('#3 WIRE', tdScr.x - 22, tdScr.y - 15);
     }
 
-    const olsX = cx - 315;
-    const olsY = cy - 75;
-    const olsW = 48;
-    const olsH = 150;
-
-    ctxHUD.fillStyle = 'hsla(212, 42%, 6%, 0.78)';
-    ctxHUD.fillRect(olsX, olsY, olsW, olsH);
-    ctxHUD.strokeStyle = 'hsla(206, 30%, 82%, 0.35)';
-    ctxHUD.strokeRect(olsX, olsY, olsW, olsH);
-
-    ctxHUD.font = '700 10px "JetBrains Mono", monospace';
-    ctxHUD.fillStyle = '#9db2c8';
-    ctxHUD.fillText('BALL', olsX + 11, olsY - 6);
-
-    const midY = olsY + olsH * 0.5;
-    ctxHUD.strokeStyle = '#24f07d';
-    ctxHUD.lineWidth = 3;
-    ctxHUD.beginPath();
-    ctxHUD.moveTo(olsX + 4, midY);
-    ctxHUD.lineTo(olsX + 16, midY);
-    ctxHUD.moveTo(olsX + olsW - 16, midY);
-    ctxHUD.lineTo(olsX + olsW - 4, midY);
-    ctxHUD.stroke();
-
     const relY = p.pos.y - carrierGroup.userData.deckY;
     const distFromWire3 = p.pos.z - carrierGroup.position.z - 75;
-    const actualSlopeDeg = THREE.MathUtils.radToDeg(Math.atan2(relY, Math.max(15, Math.abs(distFromWire3))));
-    const slopeErr = THREE.MathUtils.clamp(actualSlopeDeg - 3.5, -2.5, 2.5);
-    const ballY = midY - (slopeErr / 2.5) * (olsH * 0.42);
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat);
 
-    ctxHUD.fillStyle = Math.abs(slopeErr) < 0.55 ? '#24f07d' : slopeErr < -1.1 ? '#ff3b47' : '#f5a623';
-    ctxHUD.beginPath();
-    ctxHUD.arc(olsX + olsW * 0.5, ballY, 7, 0, Math.PI * 2);
-    ctxHUD.fill();
+    // Only display the IFLOLS Meatball when astern of the carrier on final approach (not on upwind break leg)
+    if (distFromWire3 > -25 && forward.z < -0.2) {
+      const olsX = cx - 315;
+      const olsY = cy - 75;
+      const olsW = 48;
+      const olsH = 150;
 
-    const idealSpd = p.config.idealApproachKts;
-    const spdDelta = p.speedKts - idealSpd;
-    let aoaText = 'ON SPEED';
-    let aoaColor = '#24f07d';
-    if (spdDelta > 9) {
-      aoaText = 'FAST (S)';
-      aoaColor = '#f5a623';
-    } else if (spdDelta < -8) {
-      aoaText = 'SLOW (W)';
-      aoaColor = '#ff3b47';
+      ctxHUD.fillStyle = 'hsla(212, 42%, 6%, 0.78)';
+      ctxHUD.fillRect(olsX, olsY, olsW, olsH);
+      ctxHUD.strokeStyle = 'hsla(206, 30%, 82%, 0.35)';
+      ctxHUD.strokeRect(olsX, olsY, olsW, olsH);
+
+      ctxHUD.font = '700 10px "JetBrains Mono", monospace';
+      ctxHUD.fillStyle = '#9db2c8';
+      ctxHUD.fillText('BALL', olsX + 11, olsY - 6);
+
+      const midY = olsY + olsH * 0.5;
+      ctxHUD.strokeStyle = '#24f07d';
+      ctxHUD.lineWidth = 3;
+      ctxHUD.beginPath();
+      ctxHUD.moveTo(olsX + 4, midY);
+      ctxHUD.lineTo(olsX + 16, midY);
+      ctxHUD.moveTo(olsX + olsW - 16, midY);
+      ctxHUD.lineTo(olsX + olsW - 4, midY);
+      ctxHUD.stroke();
+
+      const actualSlopeDeg = THREE.MathUtils.radToDeg(Math.atan2(relY, Math.max(15, Math.abs(distFromWire3))));
+      const slopeErr = THREE.MathUtils.clamp(actualSlopeDeg - 3.5, -2.5, 2.5);
+      const ballY = midY - (slopeErr / 2.5) * (olsH * 0.42);
+
+      ctxHUD.fillStyle = Math.abs(slopeErr) < 0.55 ? '#24f07d' : slopeErr < -1.1 ? '#ff3b47' : '#f5a623';
+      ctxHUD.beginPath();
+      ctxHUD.arc(olsX + olsW * 0.5, ballY, 7, 0, Math.PI * 2);
+      ctxHUD.fill();
+
+      const idealSpd = p.config.idealApproachKts;
+      const spdDelta = p.speedKts - idealSpd;
+      let aoaText = 'ON SPEED';
+      let aoaColor = '#24f07d';
+      if (spdDelta > 9) {
+        aoaText = 'FAST (S)';
+        aoaColor = '#f5a623';
+      } else if (spdDelta < -8) {
+        aoaText = 'SLOW (W)';
+        aoaColor = '#ff3b47';
+      }
+      ctxHUD.fillStyle = aoaColor;
+      ctxHUD.font = '700 11px "JetBrains Mono", monospace';
+      ctxHUD.fillText(aoaText, olsX - 4, olsY + olsH + 18);
     }
-    ctxHUD.fillStyle = aoaColor;
-    ctxHUD.font = '700 11px "JetBrains Mono", monospace';
-    ctxHUD.fillText(aoaText, olsX - 4, olsY + olsH + 18);
   }
 
   ctxHUD.restore();
@@ -2018,8 +2076,7 @@ document.getElementById('btn-toggle-music').addEventListener('click', () => {
 });
 
 document.getElementById('btn-toggle-camera').addEventListener('click', () => {
-  game.cameraMode = game.cameraMode === 'CHASE' ? 'COCKPIT' : 'CHASE';
-  document.getElementById('btn-toggle-camera').textContent = `CAM: ${game.cameraMode} [C]`;
+  cycleCameraMode();
 });
 
 document.getElementById('btn-toggle-audio').addEventListener('click', () => {
@@ -2032,6 +2089,7 @@ document.getElementById('btn-abort-mission').addEventListener('click', () => {
   clearCombatEntities();
   game.state = 'HANGAR';
   game.player.mesh.visible = true;
+  cockpitInteriorGroup.visible = false;
   sound.setMusicMode('anthem');
   setAtmosphere(CARRIER_STAGES[1]);
   updateUIOverlays();
@@ -2054,6 +2112,7 @@ document.getElementById('btn-debrief-hangar').addEventListener('click', () => {
   clearCombatEntities();
   game.state = 'HANGAR';
   game.player.mesh.visible = true;
+  cockpitInteriorGroup.visible = false;
   sound.setMusicMode('anthem');
   setAtmosphere(CARRIER_STAGES[1]);
   updateUIOverlays();
@@ -2075,8 +2134,7 @@ window.addEventListener('keydown', (e) => {
   }
 
   if (e.code === 'KeyC') {
-    game.cameraMode = game.cameraMode === 'CHASE' ? 'COCKPIT' : 'CHASE';
-    document.getElementById('btn-toggle-camera').textContent = `CAM: ${game.cameraMode} [C]`;
+    cycleCameraMode();
   } else if (e.code === 'KeyB') {
     sound.init();
     const musicOn = sound.toggleMusic();
