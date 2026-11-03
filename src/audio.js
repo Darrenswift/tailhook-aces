@@ -1,9 +1,14 @@
-// Synthesized Web Audio API Jet Engine, Weapons, Seeker Tones & Radio Callouts
+// Synthesized Web Audio API Jet Engine, Weapons, Seeker Tones, Radio Callouts & Top Gun 80s Synth Soundtrack
 
 export class SoundSystem {
   constructor() {
     this.ctx = null;
     this.muted = false;
+    this.musicEnabled = true;
+    this.musicMode = 'anthem'; // 'anthem' | 'dangerzone' | 'off'
+    this.musicIntervalId = null;
+    this.musicStep = 0;
+
     this.engineGain = null;
     this.turbineOsc = null;
     this.rumbleSource = null;
@@ -20,6 +25,9 @@ export class SoundSystem {
       if (this.ctx.state === 'suspended') {
         this.ctx.resume();
       }
+      if (!this.musicIntervalId && this.musicEnabled) {
+        this.startMusicLoop();
+      }
       return;
     }
 
@@ -28,7 +36,7 @@ export class SoundSystem {
 
     this.ctx = new AudioCtx();
 
-    // Create white noise buffer for jet rumble, afterburner, and explosions
+    // Create white noise buffer for jet rumble, afterburner, snare, and explosions
     const bufferSize = this.ctx.sampleRate * 2;
     this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = this.noiseBuffer.getChannelData(0);
@@ -75,6 +83,205 @@ export class SoundSystem {
     this.seekerOsc.connect(this.seekerGain);
     this.seekerGain.connect(this.ctx.destination);
     this.seekerOsc.start();
+
+    if (this.musicEnabled) {
+      this.startMusicLoop();
+    }
+  }
+
+  // ==========================================
+  // TOP GUN ANTHEM & DANGER ZONE SYNTH SEQUENCER
+  // ==========================================
+  setMusicMode(mode) {
+    if (this.musicMode === mode) return;
+    this.musicMode = mode;
+    this.musicStep = 0;
+  }
+
+  toggleMusic() {
+    this.musicEnabled = !this.musicEnabled;
+    if (this.musicEnabled && this.ctx && !this.musicIntervalId) {
+      this.startMusicLoop();
+    }
+    return this.musicEnabled;
+  }
+
+  startMusicLoop() {
+    if (this.musicIntervalId) clearInterval(this.musicIntervalId);
+
+    // 16th-note step clock (~145ms per step)
+    this.musicIntervalId = setInterval(() => {
+      if (!this.ctx || this.muted || !this.musicEnabled || this.ctx.state !== 'running') return;
+
+      if (this.musicMode === 'anthem') {
+        this.stepTopGunAnthem(this.musicStep);
+      } else if (this.musicMode === 'dangerzone') {
+        this.stepDangerZone(this.musicStep);
+      }
+      this.musicStep = (this.musicStep + 1) % 64;
+    }, 145);
+  }
+
+  playSynthLeadNote(freq, durationSec, volume = 0.045) {
+    const now = this.ctx.currentTime;
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    osc1.type = 'sawtooth';
+    osc2.type = 'square';
+    osc1.frequency.setValueAtTime(freq, now);
+    osc2.frequency.setValueAtTime(freq * 1.004, now);
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1850, now);
+    filter.Q.value = 3.2;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(volume, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + durationSec + 0.02);
+    osc2.stop(now + durationSec + 0.02);
+  }
+
+  playSynthPadChord(freqs, durationSec, volume = 0.022) {
+    const now = this.ctx.currentTime;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(920, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(volume, now + 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    for (const f of freqs) {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(f, now);
+      osc.connect(filter);
+      osc.start(now);
+      osc.stop(now + durationSec + 0.05);
+    }
+  }
+
+  playSynthBass(freq, durationSec = 0.13, volume = 0.048) {
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, now);
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(680, now);
+    filter.frequency.exponentialRampToValueAtTime(160, now + durationSec);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.002, now + durationSec);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + durationSec + 0.01);
+  }
+
+  play80sDrum(type) {
+    const now = this.ctx.currentTime;
+    if (type === 'kick') {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(130, now);
+      osc.frequency.exponentialRampToValueAtTime(38, now + 0.12);
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.002, now + 0.13);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.14);
+    } else if (type === 'snare' && this.noiseBuffer) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 350;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.055, now);
+      gain.gain.exponentialRampToValueAtTime(0.002, now + 0.18);
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+      src.start(now);
+      src.stop(now + 0.19);
+    }
+  }
+
+  stepTopGunAnthem(step) {
+    if (step === 0) this.playSynthPadChord([130.81, 196.0, 261.63, 329.63], 2.2);
+    if (step === 16) this.playSynthPadChord([98.0, 196.0, 246.94, 293.66], 2.2);
+    if (step === 32) this.playSynthPadChord([87.31, 174.61, 220.0, 261.63], 2.2);
+    if (step === 48) this.playSynthPadChord([98.0, 196.0, 246.94, 293.66], 2.2);
+
+    const melody = {
+      0: [261.63, 0.85],
+      6: [392.00, 0.85],
+      12: [392.00, 0.55],
+      16: [349.23, 0.42],
+      20: [329.63, 0.42],
+      24: [293.66, 0.42],
+      28: [523.25, 0.85],
+      34: [392.00, 1.1],
+      44: [349.23, 0.42],
+      48: [329.63, 0.42],
+      52: [293.66, 0.55],
+      56: [392.00, 0.95]
+    };
+    if (melody[step]) {
+      this.playSynthLeadNote(melody[step][0], melody[step][1], 0.038);
+    }
+    if (step % 16 === 0) this.play80sDrum('kick');
+    if (step % 16 === 8) this.play80sDrum('snare');
+  }
+
+  stepDangerZone(step) {
+    const bar = Math.floor(step / 16);
+    const rootBass = [73.42, 65.41, 58.27, 65.41][bar];
+    const octaveFreq = step % 2 === 0 ? rootBass : rootBass * 2;
+    this.playSynthBass(octaveFreq, 0.12, 0.042);
+
+    if (step % 4 === 0) this.play80sDrum('kick');
+    if (step % 8 === 4) this.play80sDrum('snare');
+
+    const riff = {
+      0: [293.66, 0.35],
+      3: [349.23, 0.35],
+      6: [392.00, 0.45],
+      16: [261.63, 0.35],
+      19: [349.23, 0.35],
+      22: [329.63, 0.45],
+      32: [233.08, 0.35],
+      35: [293.66, 0.35],
+      38: [349.23, 0.45],
+      48: [329.63, 0.35],
+      51: [392.00, 0.35],
+      54: [440.00, 0.55]
+    };
+    if (riff[step]) {
+      this.playSynthLeadNote(riff[step][0], riff[step][1], 0.032);
+    }
   }
 
   toggleMute() {
@@ -112,7 +319,6 @@ export class SoundSystem {
   }
 
   updateSeekerTone(state) {
-    // state: 'off' | 'seeking' | 'locked'
     if (!this.ctx || !this.seekerGain) return;
     if (this.muted || state === 'off') {
       this.seekerGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.04);
@@ -121,12 +327,10 @@ export class SoundSystem {
 
     const now = this.ctx.currentTime;
     if (state === 'seeking') {
-      // Classic Sidewinder growl
       const flutter = 260 + Math.sin(performance.now() * 0.045) * 55;
       this.seekerOsc.frequency.setValueAtTime(flutter, now);
       this.seekerGain.gain.setTargetAtTime(0.025, now, 0.03);
     } else if (state === 'locked') {
-      // High steady lock tone
       this.seekerOsc.frequency.setValueAtTime(880, now);
       this.seekerGain.gain.setTargetAtTime(0.045, now, 0.02);
     }
@@ -217,6 +421,32 @@ export class SoundSystem {
     src.stop(now + 0.95);
   }
 
+  playFlybyRoar() {
+    if (this.muted || !this.ctx || !this.noiseBuffer) return;
+    const now = this.ctx.currentTime;
+
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(220, now);
+    filter.frequency.exponentialRampToValueAtTime(980, now + 0.35);
+    filter.frequency.exponentialRampToValueAtTime(140, now + 1.15);
+    filter.Q.value = 1.4;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.01, now);
+    gain.gain.linearRampToValueAtTime(0.38, now + 0.35);
+    gain.gain.exponentialRampToValueAtTime(0.004, now + 1.2);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    src.start(now);
+    src.stop(now + 1.25);
+  }
+
   playWireTrap() {
     if (this.muted || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -291,7 +521,7 @@ export class SoundSystem {
       if (this.radioTimeoutId) clearTimeout(this.radioTimeoutId);
       this.radioTimeoutId = setTimeout(() => {
         banner.classList.add('hidden');
-      }, 4200);
+      }, 4500);
     }
 
     this.playRadioSquelch();
