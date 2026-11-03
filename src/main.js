@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import { Water } from 'three/examples/jsm/objects/Water.js';
 import { SoundSystem } from './audio.js';
 import { JET_CONFIGS, createJetMesh, updateJetVisuals, createCarrierGroup } from './jets.js';
 
@@ -55,11 +57,15 @@ const CARRIER_STAGES = {
   1: {
     id: 1,
     name: 'STAGE 1: STRAIGHT-IN CALM DAY',
-    skyColor: 0x5ca0d3,
-    fogColor: 0x9ec9e8,
-    fogDensity: 0.00018,
-    sunIntensity: 2.2,
-    ambientIntensity: 1.1,
+    sunElevation: 24,
+    sunAzimuth: 145,
+    turbidity: 3.5,
+    rayleigh: 1.8,
+    fogColor: 0x8fbce0,
+    fogDensity: 0.00009,
+    waterColor: 0x002b4d,
+    sunIntensity: 2.6,
+    ambientIntensity: 0.9,
     carrierSpeedMps: 0,
     windVec: new THREE.Vector3(0, 0, 0),
     turbulence: 0,
@@ -73,11 +79,15 @@ const CARRIER_STAGES = {
   2: {
     id: 2,
     name: 'STAGE 2: MOVING DECK & CROSSWIND',
-    skyColor: 0x4889be,
-    fogColor: 0x8ab4d6,
-    fogDensity: 0.00024,
-    sunIntensity: 2.0,
-    ambientIntensity: 1.0,
+    sunElevation: 16,
+    sunAzimuth: 120,
+    turbidity: 5.0,
+    rayleigh: 2.1,
+    fogColor: 0x82accf,
+    fogDensity: 0.00014,
+    waterColor: 0x002442,
+    sunIntensity: 2.3,
+    ambientIntensity: 0.85,
     carrierSpeedMps: 11.5, // ~22 kts forward along -Z
     windVec: new THREE.Vector3(10.5, 0, 0), // 20+ kt crosswind pushing right
     turbulence: 0.15,
@@ -91,18 +101,20 @@ const CARRIER_STAGES = {
   3: {
     id: 3,
     name: 'STAGE 3: CASE I OVERHEAD BREAK',
-    skyColor: 0x4f95cc,
+    sunElevation: 32,
+    sunAzimuth: 160,
+    turbidity: 2.8,
+    rayleigh: 1.6,
     fogColor: 0x95c2e4,
-    fogDensity: 0.00018,
-    sunIntensity: 2.3,
-    ambientIntensity: 1.1,
+    fogDensity: 0.00008,
+    waterColor: 0x00335c,
+    sunIntensity: 2.8,
+    ambientIntensity: 0.95,
     carrierSpeedMps: 8.0,
     windVec: new THREE.Vector3(3.0, 0, 0),
     turbulence: 0.08,
     deckPitchAmp: 0.004,
     overheadBreak: true,
-    // Start astern-starboard of carrier at 800 FT (245m), 350 KTS, flying parallel along -Z;
-    // Pass the bow, pull a 180-deg left break turn to downwind (+Z), then turn final (-Z)!
     startPos: new THREE.Vector3(120, 245, 420),
     startYaw: 0,
     startSpeedKts: 350,
@@ -111,15 +123,19 @@ const CARRIER_STAGES = {
   4: {
     id: 4,
     name: 'STAGE 4: SUNSET HEAVY SEAS',
-    skyColor: 0xc8643c,
-    fogColor: 0xd98555,
-    fogDensity: 0.00032,
-    sunIntensity: 1.7,
-    ambientIntensity: 0.72,
+    sunElevation: 2.2,
+    sunAzimuth: 192,
+    turbidity: 9.5,
+    rayleigh: 3.4,
+    fogColor: 0xc97449,
+    fogDensity: 0.00022,
+    waterColor: 0x162436,
+    sunIntensity: 1.9,
+    ambientIntensity: 0.65,
     carrierSpeedMps: 10.0,
     windVec: new THREE.Vector3(-9.5, 0, 4.0),
     turbulence: 0.55,
-    deckPitchAmp: 0.024, // Pitching and rolling deck in heavy swells
+    deckPitchAmp: 0.024,
     overheadBreak: false,
     startPos: new THREE.Vector3(25, 142, 1950),
     startYaw: 0,
@@ -129,11 +145,15 @@ const CARRIER_STAGES = {
   5: {
     id: 5,
     name: 'STAGE 5: NIGHT & FOG INSTRUMENT TRAP',
-    skyColor: 0x060d18,
-    fogColor: 0x091322,
-    fogDensity: 0.00062,
-    sunIntensity: 0.22,
-    ambientIntensity: 0.32,
+    sunElevation: -6.0,
+    sunAzimuth: 180,
+    turbidity: 4.0,
+    rayleigh: 0.8,
+    fogColor: 0x060f1c,
+    fogDensity: 0.00055,
+    waterColor: 0x020812,
+    sunIntensity: 0.18,
+    ambientIntensity: 0.28,
     carrierSpeedMps: 9.0,
     windVec: new THREE.Vector3(7.5, 0, 0),
     turbulence: 0.35,
@@ -164,99 +184,288 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.95;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x4f95cc);
-scene.fog = new THREE.FogExp2(0x8ec2e6, 0.00016);
+scene.fog = new THREE.FogExp2(0x8fbce0, 0.00009);
 
 const camera = new THREE.PerspectiveCamera(
   60,
   window.innerWidth / window.innerHeight,
   0.5,
-  18000
+  24000
 );
 
-// Lighting
-const ambientLight = new THREE.AmbientLight(0xd8ecff, 1.05);
+// Hemisphere + Directional Sun Lighting
+const ambientLight = new THREE.HemisphereLight(0xd8ecff, 0x1a3048, 0.95);
 scene.add(ambientLight);
 
-const sunLight = new THREE.DirectionalLight(0xfff4e0, 2.2);
+const sunLight = new THREE.DirectionalLight(0xfff4e0, 2.6);
 sunLight.position.set(600, 1200, 500);
 sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 1024;
+sunLight.shadow.mapSize.height = 1024;
+sunLight.shadow.camera.near = 10;
+sunLight.shadow.camera.far = 2600;
+const dShadow = 90;
+sunLight.shadow.camera.left = -dShadow;
+sunLight.shadow.camera.right = dShadow;
+sunLight.shadow.camera.top = dShadow;
+sunLight.shadow.camera.bottom = -dShadow;
 scene.add(sunLight);
 
-// Ocean Plane with Animated Wave Grid Shader / Vertex Detail
-const oceanGeo = new THREE.PlaneGeometry(36000, 36000, 96, 96);
-oceanGeo.rotateX(-Math.PI / 2);
-const oceanMat = new THREE.MeshStandardMaterial({
-  color: 0x0d3b66,
-  roughness: 0.32,
-  metalness: 0.65,
-  flatShading: true
-});
-const oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
-oceanMesh.receiveShadow = true;
-scene.add(oceanMesh);
+// ==========================================
+// PHYSICAL ATMOSPHERIC SKY & PBR REFLECTIONS
+// ==========================================
+const sky = new Sky();
+sky.scale.setScalar(22000);
+scene.add(sky);
 
-// Save baseline ocean vertex heights for wave animation
-const oceanPosAttr = oceanGeo.attributes.position;
-const oceanBaseX = new Float32Array(oceanPosAttr.count);
-const oceanBaseZ = new Float32Array(oceanPosAttr.count);
-for (let i = 0; i < oceanPosAttr.count; i++) {
-  oceanBaseX[i] = oceanPosAttr.getX(i);
-  oceanBaseZ[i] = oceanPosAttr.getZ(i);
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+let envRenderTarget = null;
+
+function setAtmosphere({
+  sunElevation = 24,
+  sunAzimuth = 145,
+  turbidity = 3.5,
+  rayleigh = 1.8,
+  fogColor = 0x8fbce0,
+  fogDensity = 0.00009,
+  waterColor = 0x002b4d,
+  sunIntensity = 2.6,
+  ambientIntensity = 0.9
+}) {
+  const skyUniforms = sky.material.uniforms;
+  skyUniforms['turbidity'].value = turbidity;
+  skyUniforms['rayleigh'].value = rayleigh;
+  skyUniforms['mieCoefficient'].value = 0.005;
+  skyUniforms['mieDirectionalG'].value = 0.82;
+
+  const phi = THREE.MathUtils.degToRad(90 - sunElevation);
+  const theta = THREE.MathUtils.degToRad(sunAzimuth);
+  const sunVec = new THREE.Vector3().setFromSphericalCoords(1, phi, theta);
+  skyUniforms['sunPosition'].value.copy(sunVec);
+
+  sunLight.position.copy(sunVec).multiplyScalar(1400);
+  sunLight.intensity = sunIntensity;
+  sunLight.color.setHex(sunElevation < 6 ? 0xff9d5c : 0xfff5e4);
+  ambientLight.intensity = ambientIntensity;
+
+  scene.fog.color.setHex(fogColor);
+  scene.fog.density = fogDensity;
+
+  if (waterMesh && waterMesh.material && waterMesh.material.uniforms) {
+    waterMesh.material.uniforms['sunDirection'].value.copy(sunVec).normalize();
+    waterMesh.material.uniforms['waterColor'].value.setHex(waterColor);
+    waterMesh.material.uniforms['sunColor'].value.setHex(sunElevation < 6 ? 0xff7733 : 0xffffff);
+  }
+
+  // Generate PBR environment cubemap from the physical sky (runs once per mode switch!)
+  const envScene = new THREE.Scene();
+  const envSky = new Sky();
+  envSky.scale.setScalar(100);
+  envSky.material.uniforms['turbidity'].value = turbidity;
+  envSky.material.uniforms['rayleigh'].value = rayleigh;
+  envSky.material.uniforms['mieCoefficient'].value = 0.005;
+  envSky.material.uniforms['mieDirectionalG'].value = 0.82;
+  envSky.material.uniforms['sunPosition'].value.copy(sunVec);
+  envScene.add(envSky);
+
+  if (envRenderTarget) envRenderTarget.dispose();
+  envRenderTarget = pmremGenerator.fromScene(envScene);
+  scene.environment = envRenderTarget.texture;
 }
 
-// Cloud Layer & Distant Islands
+// ==========================================
+// GPU SHADER OCEAN WITH PROCEDURAL NORMAL MAP
+// ==========================================
+function createProceduralWaterNormalTexture() {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.createImageData(size, size);
+  const data = imgData.data;
+
+  // Generate a tileable multi-wave normal map (RGB encodes XYZ surface normal)
+  const twoPi = Math.PI * 2;
+  for (let y = 0; y < size; y++) {
+    const ny = (y / size) * twoPi;
+    for (let x = 0; x < size; x++) {
+      const nx = (x / size) * twoPi;
+      const dx =
+        Math.cos(nx * 3 + ny * 2) * 0.35 +
+        Math.cos(nx * 7 - ny * 5) * 0.25 +
+        Math.sin(nx * 13 + ny * 11) * 0.15;
+      const dy =
+        Math.sin(nx * 2 - ny * 4) * 0.35 +
+        Math.cos(nx * 6 + ny * 8) * 0.25 +
+        Math.cos(nx * 11 - ny * 14) * 0.15;
+
+      const idx = (y * size + x) * 4;
+      data[idx] = Math.floor((dx * 0.5 + 0.5) * 255);
+      data[idx + 1] = Math.floor((dy * 0.5 + 0.5) * 255);
+      data[idx + 2] = 235;
+      data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+const oceanGeo = new THREE.PlaneGeometry(36000, 36000);
+const waterMesh = new Water(oceanGeo, {
+  textureWidth: 512,
+  textureHeight: 512,
+  waterNormals: createProceduralWaterNormalTexture(),
+  sunDirection: new THREE.Vector3(),
+  sunColor: 0xffffff,
+  waterColor: 0x002b4d,
+  distortionScale: 3.4,
+  fog: true
+});
+waterMesh.rotation.x = -Math.PI / 2;
+waterMesh.material.uniforms['size'].value = 2.4;
+scene.add(waterMesh);
+
+// Initialize Default Atmosphere
+setAtmosphere(CARRIER_STAGES[1]);
+
+// ==========================================
+// VOLUMETRIC-STYLE SOFT CLOUDS & ARCHIPELAGO ISLANDS
+// ==========================================
 const environmentGroup = new THREE.Group();
 scene.add(environmentGroup);
 
-function buildEnvironment() {
-  const cloudMat = new THREE.MeshLambertMaterial({
-    color: 0xf4f9ff,
-    transparent: true,
-    opacity: 0.78
-  });
-  for (let i = 0; i < 48; i++) {
-    const cloudCluster = new THREE.Group();
-    const puffs = 3 + (i % 3);
-    for (let p = 0; p < puffs; p++) {
-      const puffGeo = new THREE.BoxGeometry(
-        90 + Math.random() * 110,
-        22 + Math.random() * 18,
-        70 + Math.random() * 90
-      );
-      const puff = new THREE.Mesh(puffGeo, cloudMat);
-      puff.position.set((p - 1) * 55, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 40);
-      cloudCluster.add(puff);
-    }
-    const angle = (i / 48) * Math.PI * 2;
-    const dist = 1200 + (i % 6) * 950;
-    cloudCluster.position.set(
-      Math.cos(angle) * dist,
-      460 + (i % 4) * 140,
-      Math.sin(angle) * dist
-    );
-    environmentGroup.add(cloudCluster);
+function createSoftCloudTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Multi-lobe radial gradient for soft cumulus cloud appearance
+  const lobes = [
+    [128, 136, 95],
+    [88, 144, 72],
+    [168, 144, 72],
+    [128, 104, 75]
+  ];
+  for (const [lx, ly, r] of lobes) {
+    const grad = ctx.createRadialGradient(lx, ly, r * 0.12, lx, ly, r);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.55)');
+    grad.addColorStop(0.5, 'rgba(242, 248, 255, 0.28)');
+    grad.addColorStop(1, 'rgba(230, 240, 255, 0.0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(lx, ly, r, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  // Volcanic Tactical Islands on the perimeter for spatial reference
-  const islandMat = new THREE.MeshStandardMaterial({
-    color: 0x355843,
-    roughness: 0.85,
+  return new THREE.CanvasTexture(canvas);
+}
+
+function buildSculptedIsland(ix, iz, radius, maxHeight) {
+  const geo = new THREE.ConeGeometry(radius, maxHeight, 28, 10, false);
+  const pos = geo.attributes.position;
+  const colors = [];
+  const colorTmp = new THREE.Color();
+
+  for (let i = 0; i < pos.count; i++) {
+    let vx = pos.getX(i);
+    let vy = pos.getY(i) + maxHeight * 0.42;
+    let vz = pos.getZ(i);
+
+    const dist = Math.hypot(vx, vz);
+    const angle = Math.atan2(vz, vx);
+    if (dist > 1) {
+      // Sculpt natural coastal bays and mountain ridges
+      const ridgeNoise =
+        1.0 +
+        Math.sin(angle * 3 + ix * 0.01) * 0.18 +
+        Math.cos(angle * 5 - iz * 0.01) * 0.12 +
+        Math.sin(dist * 0.025) * 0.08;
+      vx *= ridgeNoise;
+      vz *= ridgeNoise;
+    }
+
+    pos.setXYZ(i, vx, vy, vz);
+
+    // Vertex coloring: Sandy Beach -> Lush Tropical Green -> Rocky Peak
+    if (vy < 14) {
+      colorTmp.setHex(0xd2be96); // Shoreline sand
+    } else if (vy < maxHeight * 0.52) {
+      colorTmp.setHex(0x2f5a3c); // Forested slope
+    } else {
+      colorTmp.setHex(0x56616b); // Rocky summit ridge
+    }
+    colors.push(colorTmp.r, colorTmp.g, colorTmp.b);
+  }
+
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+
+  const mat = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 0.88,
+    metalness: 0.08,
     flatShading: true
   });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(ix, 0, iz);
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function buildEnvironment() {
+  // 1. Soft Volumetric-Style Cumulus Cloud Clusters
+  const cloudTex = createSoftCloudTexture();
+  const cloudSpriteMat = new THREE.SpriteMaterial({
+    map: cloudTex,
+    transparent: true,
+    opacity: 0.82,
+    depthWrite: false
+  });
+
+  for (let i = 0; i < 42; i++) {
+    const angle = (i / 42) * Math.PI * 2;
+    const dist = 1350 + (i % 6) * 980;
+    const cx = Math.cos(angle) * dist;
+    const cy = 520 + (i % 4) * 145;
+    const cz = Math.sin(angle) * dist;
+
+    const puffs = 4 + (i % 3);
+    for (let p = 0; p < puffs; p++) {
+      const sprite = new THREE.Sprite(cloudSpriteMat);
+      sprite.position.set(
+        cx + (p - 1.5) * 95 + (Math.random() - 0.5) * 40,
+        cy + (Math.random() - 0.5) * 28,
+        cz + (Math.random() - 0.5) * 85
+      );
+      const scaleW = 280 + Math.random() * 180;
+      const scaleH = 130 + Math.random() * 75;
+      sprite.scale.set(scaleW, scaleH, 1);
+      environmentGroup.add(sprite);
+    }
+  }
+
+  // 2. Sculpted Multi-Layered Archipelago Islands
   const islandCoords = [
-    [-2600, -2200, 420, 260],
-    [2900, -1800, 520, 310],
-    [-2200, 2600, 380, 210],
-    [2500, 2400, 460, 280]
+    [-2500, -2100, 520, 290],
+    [2800, -1750, 620, 340],
+    [-2100, 2550, 460, 240],
+    [2450, 2350, 540, 310],
+    [-3800, 400, 680, 380],
+    [3900, 650, 590, 320]
   ];
   for (const [ix, iz, radius, height] of islandCoords) {
-    const coneGeo = new THREE.ConeGeometry(radius, height, 7);
-    const island = new THREE.Mesh(coneGeo, islandMat);
-    island.position.set(ix, height * 0.42, iz);
-    environmentGroup.add(island);
+    environmentGroup.add(buildSculptedIsland(ix, iz, radius, height));
   }
 }
 buildEnvironment();
@@ -320,7 +529,7 @@ const game = {
     trappedWire: null,
     trapProgress: 0,
     lockedTarget: null,
-    lockProgress: 0, // 0.0 to 1.0
+    lockProgress: 0,
     seekingTarget: null
   },
 
@@ -441,12 +650,18 @@ function startCombatMode() {
   game.kills = 0;
   game.wavePauseTimer = 0;
 
-  // Set sunny daytime combat atmosphere
-  scene.background.setHex(0x4a90c8);
-  scene.fog.color.setHex(0x8ec2e6);
-  scene.fog.density = 0.00014;
-  sunLight.intensity = 2.2;
-  ambientLight.intensity = 1.05;
+  // Set crisp high-altitude combat atmosphere
+  setAtmosphere({
+    sunElevation: 28,
+    sunAzimuth: 150,
+    turbidity: 2.8,
+    rayleigh: 1.75,
+    fogColor: 0x8fbce0,
+    fogDensity: 0.00008,
+    waterColor: 0x002b4d,
+    sunIntensity: 2.7,
+    ambientIntensity: 0.95
+  });
 
   carrierGroup.position.set(0, 0, 0);
   carrierGroup.rotation.set(0, 0, 0);
@@ -507,7 +722,7 @@ function spawnCombatWave(waveNum) {
     const isBomber = type === 'bomber';
 
     game.enemies.push({
-      id: `${waveNum}-${idx}-${ performance.now() }`,
+      id: `${waveNum}-${idx}-${performance.now()}`,
       type,
       label: isAce ? 'SU-33 ACE' : isBomber ? 'TU-22M BOMBER' : 'MIG-29',
       mesh,
@@ -540,11 +755,7 @@ function startCarrierStage(stageNum) {
   game.carrierStage = stage.id;
   game.breakPassedBow = false;
 
-  scene.background.setHex(stage.skyColor);
-  scene.fog.color.setHex(stage.fogColor);
-  scene.fog.density = stage.fogDensity;
-  sunLight.intensity = stage.sunIntensity;
-  ambientLight.intensity = stage.ambientIntensity;
+  setAtmosphere(stage);
 
   carrierGroup.position.set(0, 0, 0);
   carrierGroup.rotation.set(0, 0, 0);
@@ -590,7 +801,7 @@ function startCarrierStage(stageNum) {
 // ==========================================
 // WEAPONS, FLARES & EXPLOSIONS
 // ==========================================
-const bulletGeo = new THREE.BoxGeometry(0.18, 0.18, 4.2);
+const bulletGeo = new THREE.BoxGeometry(0.18, 0.18, 4.5);
 const playerBulletMat = new THREE.MeshBasicMaterial({ color: 0xfff066 });
 const enemyBulletMat = new THREE.MeshBasicMaterial({ color: 0xff4433 });
 
@@ -753,14 +964,15 @@ function deployPlayerFlares() {
 
 function spawnExplosion(pos, scale = 1.0, colorHex = 0xff7722) {
   sound.playExplosion(scale);
-  const count = Math.floor(14 * scale);
+  const count = Math.floor(16 * scale);
   for (let i = 0; i < count; i++) {
     const pMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.9 + Math.random() * 1.8 * scale, 6, 6),
+      new THREE.SphereGeometry(0.9 + Math.random() * 1.9 * scale, 6, 6),
       new THREE.MeshBasicMaterial({
         color: i % 2 === 0 ? colorHex : 0xffcc44,
         transparent: true,
-        opacity: 0.92
+        opacity: 0.92,
+        blending: THREE.AdditiveBlending
       })
     );
     pMesh.position.copy(pos);
@@ -787,7 +999,7 @@ function spawnSmokePuff(pos, size = 0.55, colorHex = 0xdce6f2, ttl = 0.55) {
     new THREE.MeshBasicMaterial({
       color: colorHex,
       transparent: true,
-      opacity: 0.45
+      opacity: 0.42
     })
   );
   sMesh.position.copy(pos);
@@ -809,17 +1021,10 @@ let pitchInvertStick = true; // True = ArrowDown pulls nose UP (flight stick); p
 function updateSimulation(dt) {
   const nowSec = performance.now() * 0.001;
 
-  // Animate Ocean Waves & Carrier Radar
-  for (let i = 0; i < oceanPosAttr.count; i++) {
-    const ox = oceanBaseX[i];
-    const oz = oceanBaseZ[i];
-    const waveH =
-      Math.sin(ox * 0.012 + nowSec * 1.6) * 1.1 +
-      Math.cos(oz * 0.015 + nowSec * 1.3) * 1.1;
-    oceanPosAttr.setY(i, waveH - 1.5);
+  // Advance GPU Water Shader Time & Carrier Radar Spinner (Zero CPU vertex loop!)
+  if (waterMesh && waterMesh.material && waterMesh.material.uniforms) {
+    waterMesh.material.uniforms['time'].value += dt * 0.85;
   }
-  oceanPosAttr.needsUpdate = true;
-
   if (carrierGroup.userData.radarSpinner) {
     carrierGroup.userData.radarSpinner.rotation.y += dt * 1.8;
   }
@@ -836,10 +1041,10 @@ function updateSimulation(dt) {
     p.quat.setFromEuler(new THREE.Euler(0.02, nowSec * 0.45, 0, 'YXZ'));
     p.mesh.position.copy(p.pos);
     p.mesh.quaternion.copy(p.quat);
-    updateJetVisuals(p.mesh, 380, 0.82, true);
+    updateJetVisuals(p.mesh, 380, 0.86, true, Math.sin(nowSec * 1.5) * 0.3, Math.cos(nowSec * 1.2) * 0.3);
 
-    camera.position.set(Math.sin(nowSec * 0.25) * 18, 25.5, 86);
-    camera.lookAt(0, 21.8, 65);
+    camera.position.set(Math.sin(nowSec * 0.25) * 16.5, 24.8, 84);
+    camera.lookAt(0, 21.6, 65);
     return;
   }
 
@@ -880,7 +1085,7 @@ function updateSimulation(dt) {
     p.pos.z += deckMoveZ;
     p.pos.y = carrierGroup.userData.deckY + 1.36;
     p.mesh.position.copy(p.pos);
-    updateJetVisuals(p.mesh, p.speedKts, 0, true);
+    updateJetVisuals(p.mesh, p.speedKts, 0, true, 0, 0);
 
     // Update stretched arrestor wire line from port/starboard sheaves to tailhook
     const wireZ = carrierGroup.userData.wirePositionsZ[p.trappedWire - 1];
@@ -984,19 +1189,21 @@ function updateSimulation(dt) {
   p.pos.addScaledVector(p.vel, dt);
   p.verticalSpeedFps = ((p.pos.y - prevY) / Math.max(0.001, dt)) * 3.28084;
 
-  // Keep Ocean centered beneath player so player never runs out of water
-  oceanMesh.position.x = Math.floor(p.pos.x / 600) * 600;
-  oceanMesh.position.z = Math.floor(p.pos.z / 600) * 600;
+  // Keep Ocean & Sky centered around player
+  waterMesh.position.x = Math.floor(p.pos.x / 600) * 600;
+  waterMesh.position.z = Math.floor(p.pos.z / 600) * 600;
+  sky.position.x = p.pos.x;
+  sky.position.z = p.pos.z;
 
   p.mesh.position.copy(p.pos);
   p.mesh.quaternion.copy(p.quat);
-  updateJetVisuals(p.mesh, p.speedKts, p.throttle, p.gearDown);
+  updateJetVisuals(p.mesh, p.speedKts, p.throttle, p.gearDown, pitchInput, rollInput);
 
   // Wingtip Contrails during high-G turns or high speed
-  if (Math.abs(p.gLoad) > 2.6 || p.speedKts > 480) {
+  if (Math.abs(p.gLoad) > 2.5 || p.speedKts > 480) {
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat).normalize();
     for (const side of [-5.8, 5.8]) {
-      spawnSmokePuff(p.pos.clone().addScaledVector(right, side), 0.28, 0xe8f4ff, 0.32);
+      spawnSmokePuff(p.pos.clone().addScaledVector(right, side), 0.26, 0xe8f4ff, 0.32);
     }
   }
 
@@ -1222,7 +1429,6 @@ function updateCombatMode(dt) {
         saveData.bestWave = nextWave;
         writeSaveData(saveData);
       }
-      // Resupply missiles, flares, and partial hull integrity
       p.missiles = p.config.missiles;
       p.flares = p.config.flares;
       p.hull = Math.min(100, p.hull + 35);
@@ -1245,10 +1451,8 @@ function updateCombatMode(dt) {
     const toPlayer = p.pos.clone().sub(e.pos);
     const dist = toPlayer.length();
 
-    // Target point: orbit or pursue player, keeping safe altitude above water
     const targetPoint = p.pos.clone();
     if (dist < 260) {
-      // Break off slightly to avoid head-on collision
       targetPoint.add(new THREE.Vector3(280, 90, 280));
     }
     if (e.pos.y < 140) {
@@ -1266,7 +1470,7 @@ function updateCombatMode(dt) {
     e.mesh.position.copy(e.pos);
     e.mesh.lookAt(e.pos.clone().add(curDir));
     e.quat.copy(e.mesh.quaternion);
-    updateJetVisuals(e.mesh, e.speedKts, 0.8, false);
+    updateJetVisuals(e.mesh, e.speedKts, 0.85, false, 0.2, 0);
 
     // Enemy Gun Burst when aligned at medium-close range
     e.gunTimer -= dt;
@@ -1296,7 +1500,7 @@ function updateCombatMode(dt) {
   // Player AIM-9X Seeker Lock-On Calculation
   const playerForward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat).normalize();
   let bestCandidate = null;
-  let bestDot = 0.84; // Within ~32-degree HUD seeker cone
+  let bestDot = 0.84;
 
   for (const e of game.enemies) {
     const toE = e.pos.clone().sub(p.pos);
@@ -1333,12 +1537,10 @@ function updateCarrierApproach(dt) {
   const p = game.player;
   const stage = CARRIER_STAGES[game.carrierStage] || CARRIER_STAGES[1];
 
-  // Relative position to Carrier Target #3 Wire (x=0, y=20.0, z=75 in carrier space)
   const relX = p.pos.x - carrierGroup.position.x;
   const relY = p.pos.y - carrierGroup.userData.deckY;
   const relZ = p.pos.z - carrierGroup.position.z;
 
-  // Check Stage 3 Case I Overhead Break progression
   if (stage.overheadBreak && !game.breakPassedBow && relZ < -180) {
     game.breakPassedBow = true;
     sound.speakRadio(
@@ -1351,14 +1553,12 @@ function updateCarrierApproach(dt) {
   const distFromWire3 = relZ - 75;
   const idealSlopeRad = THREE.MathUtils.degToRad(3.5);
 
-  // Update 3D Meatball light on Carrier Optical Landing System
   if (distFromWire3 > 20 && distFromWire3 < 1900) {
     const actualAngleRad = Math.atan2(relY, Math.max(10, distFromWire3));
     const glideErrorDeg = THREE.MathUtils.radToDeg(actualAngleRad - idealSlopeRad);
     const ballOffsetY = THREE.MathUtils.clamp(glideErrorDeg * 0.85, -2.0, 2.0);
     carrierGroup.userData.meatballLight3D.position.y = ballOffsetY;
 
-    // Periodic LSO Radio Coaching on Final Approach
     const now = performance.now();
     if (distFromWire3 < 1300 && distFromWire3 > 95 && now - game.lsoLastCallTime > 4400) {
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat);
@@ -1383,11 +1583,9 @@ function updateCarrierApproach(dt) {
     }
   }
 
-  // Check Deck Touchdown (Flight Deck Bounds: X in [-20, 20], Z in [-155, 165], Y <= 21.6)
   if (relY <= 1.65 && relY >= -2.5 && Math.abs(relX) <= 21 && relZ <= 165 && relZ >= -155) {
     const sinkRateFps = Math.abs(p.verticalSpeedFps);
 
-    // Hard crash onto deck if sink rate is extreme or banking heavily
     if (sinkRateFps > 34 || Math.abs(p.roll) > 0.55) {
       spawnExplosion(p.pos, 1.8);
       showDebriefModal({
@@ -1405,9 +1603,7 @@ function updateCarrierApproach(dt) {
       return;
     }
 
-    // Check if Gear & Tailhook are down and within Arrestor Wire Zone (relZ between 40 and 130)
     if (p.gearDown && relZ >= 38 && relZ <= 132 && p.speedKts < 195) {
-      // Find closest arrestor wire (#1: 115, #2: 95, #3: 75, #4: 55)
       const wires = carrierGroup.userData.wirePositionsZ;
       let bestWire = 3;
       let bestDist = Infinity;
@@ -1435,7 +1631,6 @@ function updateCarrierApproach(dt) {
         true
       );
     } else {
-      // Bolter! Either hook was up, too fast, or missed the wires
       p.pos.y = carrierGroup.userData.deckY + 2.2;
       p.pitch = Math.max(0.08, p.pitch);
       p.throttle = 1.0;
@@ -1528,8 +1723,8 @@ function updateCamera(dt) {
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(p.quat);
     const desiredCamPos = p.pos
       .clone()
-      .addScaledVector(forward, -23.5)
-      .addScaledVector(up, 5.6);
+      .addScaledVector(forward, -22.5)
+      .addScaledVector(up, 5.2);
 
     camera.position.lerp(desiredCamPos, Math.min(1, dt * 11.5));
     const lookTarget = p.pos.clone().addScaledVector(forward, 35);
@@ -1606,7 +1801,6 @@ function renderAvionicsHUD() {
 
     ctxHUD.beginPath();
     if (deg === 0) {
-      // Horizon line
       ctxHUD.moveTo(-85, yOff);
       ctxHUD.lineTo(-24, yOff);
       ctxHUD.moveTo(24, yOff);
@@ -1616,7 +1810,7 @@ function renderAvionicsHUD() {
       ctxHUD.moveTo(-52, yOff + tickDir);
       ctxHUD.lineTo(-52, yOff);
       ctxHUD.lineTo(-22, yOff);
-      ctxHUD.lineTo(22, yOff);
+      ctxHUD.moveTo(22, yOff);
       ctxHUD.lineTo(52, yOff);
       ctxHUD.lineTo(52, yOff + tickDir);
       ctxHUD.fillText(`${deg}`, 57, yOff + 4);
@@ -1625,18 +1819,16 @@ function renderAvionicsHUD() {
   }
   ctxHUD.restore();
 
-  // 4. Airspeed Tape (Left of Center) & Altitude Tape (Right of Center)
+  // 4. Airspeed Tape & Altitude Tape
   const spdKts = Math.round(p.speedKts);
   const altFt = Math.max(0, Math.round(p.pos.y * 3.28084));
 
-  // Speed Box
   ctxHUD.strokeRect(cx - 235, cy - 16, 78, 32);
   ctxHUD.font = '700 16px "JetBrains Mono", monospace';
   ctxHUD.fillText(`${spdKts}`, cx - 226, cy + 6);
   ctxHUD.font = '500 11px "JetBrains Mono", monospace';
   ctxHUD.fillText('KTS', cx - 182, cy + 5);
 
-  // Altitude Box
   ctxHUD.strokeRect(cx + 157, cy - 16, 86, 32);
   ctxHUD.font = '700 16px "JetBrains Mono", monospace';
   ctxHUD.fillText(`${altFt}`, cx + 165, cy + 6);
@@ -1649,7 +1841,7 @@ function renderAvionicsHUD() {
   ctxHUD.font = '700 13px "JetBrains Mono", monospace';
   ctxHUD.fillText(`HDG ${String(hdgDeg).padStart(3, '0')}`, cx - 27, 71);
 
-  // 6. Tactical Radar Minimap (Top-Left below status bar)
+  // 6. Tactical Radar Minimap
   const radarX = 88;
   const radarY = 128;
   const radarR = 58;
@@ -1660,7 +1852,6 @@ function renderAvionicsHUD() {
   ctxHUD.strokeStyle = '#24f07d';
   ctxHUD.stroke();
 
-  // Radar range rings & forward cone
   ctxHUD.strokeStyle = 'hsla(146, 86%, 54%, 0.28)';
   ctxHUD.beginPath();
   ctxHUD.arc(radarX, radarY, radarR * 0.5, 0, Math.PI * 2);
@@ -1670,7 +1861,6 @@ function renderAvionicsHUD() {
   ctxHUD.lineTo(radarX + 28, radarY - 48);
   ctxHUD.stroke();
 
-  // Carrier icon on Radar
   const toCarrier = carrierGroup.position.clone().sub(p.pos);
   const cosY = Math.cos(p.yaw);
   const sinY = Math.sin(p.yaw);
@@ -1683,14 +1873,12 @@ function renderAvionicsHUD() {
 
   // Enemies on Radar & 3D Target Reticles (Mode 1: Combat)
   if (game.state === 'COMBAT') {
-    // Draw Seeker Circle
     ctxHUD.strokeStyle = 'hsla(146, 86%, 54%, 0.35)';
     ctxHUD.beginPath();
     ctxHUD.arc(cx, cy, 145, 0, Math.PI * 2);
     ctxHUD.stroke();
 
     for (const e of game.enemies) {
-      // Radar blip
       const rel = e.pos.clone().sub(p.pos);
       const rx = (rel.x * cosY - rel.z * sinY) / 45;
       const rz = (rel.x * sinY + rel.z * cosY) / 45;
@@ -1703,7 +1891,6 @@ function renderAvionicsHUD() {
       ctxHUD.arc(radarX + clampedRx, radarY + clampedRz, 3.5, 0, Math.PI * 2);
       ctxHUD.fill();
 
-      // 3D Target Box on Screen
       const scr = projectWorldToScreen(e.pos);
       const distMeters = Math.round(p.pos.distanceTo(e.pos));
       const isLockedTarget = e === p.lockedTarget;
@@ -1718,10 +1905,8 @@ function renderAvionicsHUD() {
         ctxHUD.font = '600 11px "JetBrains Mono", monospace';
         ctxHUD.fillText(`${e.label} ${distMeters}M`, scr.x - 28, scr.y - 24);
 
-        // Enemy HP micro-bar
         ctxHUD.fillRect(scr.x - 18, scr.y + 22, 36 * (e.hp / e.maxHp), 3);
 
-        // Lock-On Diamond & Lead-Computing Gun Pipper for Active Target
         if (isLockedTarget) {
           if (p.lockProgress > 0) {
             ctxHUD.beginPath();
@@ -1733,7 +1918,6 @@ function renderAvionicsHUD() {
             ctxHUD.fillText('SHOOT [F]', scr.x - 30, scr.y + 38);
           }
 
-          // Lead-Computing Gun Pipper (shows where to aim 20mm Vulcan Cannon!)
           if (distMeters < 1100) {
             const bulletSpeed = p.speedKts * 0.5144 + 620;
             const timeOfFlight = distMeters / bulletSpeed;
@@ -1750,7 +1934,6 @@ function renderAvionicsHUD() {
           }
         }
       } else if (isLockedTarget) {
-        // Off-screen Target Direction Arrow on HUD Edge
         const angle = Math.atan2(
           scr.inFront ? scr.y - cy : cy - scr.y,
           scr.inFront ? scr.x - cx : cx - scr.x
@@ -1768,7 +1951,7 @@ function renderAvionicsHUD() {
     }
   }
 
-  // 7. Carrier Approach IFLOLS "Meatball" & AoA Indexer (Mode 2: Carrier Challenge)
+  // 7. Carrier Approach IFLOLS "Meatball" & AoA Indexer
   if (game.state === 'CARRIER') {
     const TouchdownWorld = new THREE.Vector3(
       carrierGroup.position.x,
@@ -1784,7 +1967,6 @@ function renderAvionicsHUD() {
       ctxHUD.fillText('#3 WIRE', tdScr.x - 22, tdScr.y - 15);
     }
 
-    // Draw IFLOLS "Meatball" Gauge Panel on Left Side of HUD
     const olsX = cx - 315;
     const olsY = cy - 75;
     const olsW = 48;
@@ -1799,7 +1981,6 @@ function renderAvionicsHUD() {
     ctxHUD.fillStyle = '#9db2c8';
     ctxHUD.fillText('BALL', olsX + 11, olsY - 6);
 
-    // Green Datum Bars
     const midY = olsY + olsH * 0.5;
     ctxHUD.strokeStyle = '#24f07d';
     ctxHUD.lineWidth = 3;
@@ -1810,7 +1991,6 @@ function renderAvionicsHUD() {
     ctxHUD.lineTo(olsX + olsW - 4, midY);
     ctxHUD.stroke();
 
-    // Compute Glide Slope Error
     const relY = p.pos.y - carrierGroup.userData.deckY;
     const distFromWire3 = p.pos.z - carrierGroup.position.z - 75;
     const actualSlopeDeg = THREE.MathUtils.radToDeg(Math.atan2(relY, Math.max(15, Math.abs(distFromWire3))));
@@ -1822,7 +2002,6 @@ function renderAvionicsHUD() {
     ctxHUD.arc(olsX + olsW * 0.5, ballY, 7, 0, Math.PI * 2);
     ctxHUD.fill();
 
-    // Speed / AoA Indexer text below Meatball
     const idealSpd = p.config.idealApproachKts;
     const spdDelta = p.speedKts - idealSpd;
     let aoaText = 'ON SPEED';
@@ -1890,7 +2069,6 @@ function updateUIOverlays() {
   document.getElementById('combat-high-score-label').textContent =
     `BEST: WAVE ${saveData.bestWave} • ${saveData.bestScore} PTS`;
 
-  // Update 5-Stage Carrier Challenge Badges
   for (let s = 1; s <= 5; s++) {
     const badge = document.getElementById(`badge-stage-${s}`);
     if (badge) {
@@ -1969,7 +2147,6 @@ function saveCallsignFromInput() {
 document.getElementById('btn-save-callsign').addEventListener('click', saveCallsignFromInput);
 document.getElementById('input-pilot-callsign').addEventListener('change', saveCallsignFromInput);
 
-// Aircraft Selector Cards
 document.querySelectorAll('.jet-card').forEach((card) => {
   card.addEventListener('click', () => {
     sound.init();
@@ -1986,21 +2163,18 @@ document.querySelectorAll('.jet-card').forEach((card) => {
   });
 });
 
-// Restore active aircraft card on load
 document.querySelectorAll('.jet-card').forEach((c) => {
   c.classList.toggle('active', c.getAttribute('data-jet') === saveData.selectedJet);
 });
 document.getElementById('input-pilot-callsign').value = saveData.callsign;
 updateUIOverlays();
 
-// Launch Air-to-Air Combat
 document.getElementById('btn-launch-combat').addEventListener('click', () => {
   saveCallsignFromInput();
   lastMissionType = 'COMBAT';
   startCombatMode();
 });
 
-// Launch Carrier Landing Stages 1..5
 document.querySelectorAll('.stage-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     saveCallsignFromInput();
@@ -2010,7 +2184,6 @@ document.querySelectorAll('.stage-btn').forEach((btn) => {
   });
 });
 
-// Top Bar Buttons
 document.getElementById('btn-toggle-camera').addEventListener('click', () => {
   game.cameraMode = game.cameraMode === 'CHASE' ? 'COCKPIT' : 'CHASE';
   document.getElementById('btn-toggle-camera').textContent = `CAM: ${game.cameraMode} [C]`;
@@ -2026,10 +2199,10 @@ document.getElementById('btn-abort-mission').addEventListener('click', () => {
   clearCombatEntities();
   game.state = 'HANGAR';
   game.player.mesh.visible = true;
+  setAtmosphere(CARRIER_STAGES[1]);
   updateUIOverlays();
 });
 
-// Debrief Modal Buttons
 document.getElementById('btn-debrief-retry').addEventListener('click', () => {
   if (lastMissionType === 'CARRIER') {
     startCarrierStage(game.carrierStage);
@@ -2047,10 +2220,10 @@ document.getElementById('btn-debrief-hangar').addEventListener('click', () => {
   clearCombatEntities();
   game.state = 'HANGAR';
   game.player.mesh.visible = true;
+  setAtmosphere(CARRIER_STAGES[1]);
   updateUIOverlays();
 });
 
-// Keyboard Listeners
 window.addEventListener('keydown', (e) => {
   if (document.activeElement && document.activeElement.id === 'input-pilot-callsign') {
     if (e.code === 'Enter') {
@@ -2084,6 +2257,7 @@ window.addEventListener('keydown', (e) => {
     clearCombatEntities();
     game.state = 'HANGAR';
     game.player.mesh.visible = true;
+    setAtmosphere(CARRIER_STAGES[1]);
     updateUIOverlays();
   }
 
@@ -2114,7 +2288,6 @@ window.addEventListener('keyup', (e) => {
   keys[e.code] = false;
 });
 
-// Resize Handler
 function handleResize() {
   const w = window.innerWidth;
   const h = window.innerHeight;
