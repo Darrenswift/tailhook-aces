@@ -145,13 +145,28 @@ html, body {
   background: var(--bg-panel);
   border: 1px solid var(--line-subtle);
   border-radius: 6px;
-  padding: 20px;
+  padding: 15px 18px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 11px;
   backdrop-filter: blur(12px);
   overflow-y: auto;
-  max-height: calc(100vh - 145px);
+  max-height: calc(100vh - 138px);
+  scrollbar-width: thin;
+  scrollbar-color: hsla(206, 30%, 60%, 0.35) transparent;
+}
+
+.hangar-column::-webkit-scrollbar {
+  width: 6px;
+}
+
+.hangar-column::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hangar-column::-webkit-scrollbar-thumb {
+  background: hsla(206, 30%, 60%, 0.35);
+  border-radius: 3px;
 }
 
 .hangar-center-showcase {
@@ -240,7 +255,7 @@ html, body {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-secondary);
-  padding-bottom: 6px;
+  padding-bottom: 5px;
   border-bottom: 1px solid var(--line-subtle);
 }
 
@@ -306,14 +321,14 @@ html, body {
 .jet-selector-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .jet-card {
   background: var(--bg-surface);
   border: 1px solid var(--line-subtle);
   border-radius: 5px;
-  padding: 12px 14px;
+  padding: 10px 13px;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.12s ease;
   text-align: left;
@@ -335,27 +350,31 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  gap: 8px;
   margin-bottom: 4px;
 }
 
 .jet-card-title {
-  font-size: 1.02rem;
+  font-size: 1.0rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
 
 .jet-card-role {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   color: var(--hud-amber);
   text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .jet-card-desc {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
-  margin-bottom: 8px;
-  line-height: 1.35;
+  margin-bottom: 7px;
+  line-height: 1.32;
 }
 
 .jet-stats-grid {
@@ -393,20 +412,21 @@ html, body {
   background: var(--bg-surface);
   border: 1px solid var(--line-subtle);
   border-radius: 5px;
-  padding: 14px;
+  padding: 11px 13px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .mode-block-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .mode-block-title {
-  font-size: 1.05rem;
+  font-size: 1.0rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   color: var(--text-primary);
@@ -414,25 +434,26 @@ html, body {
 
 .mode-record {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--hud-amber);
+  white-space: nowrap;
 }
 
 .mode-desc {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
-  line-height: 1.38;
+  line-height: 1.32;
 }
 
 .primary-launch-btn {
   width: 100%;
-  padding: 11px 16px;
+  padding: 9px 14px;
   background: var(--hud-green);
   color: hsl(212, 45%, 6%);
   border: none;
   border-radius: 4px;
   font-family: var(--font-display);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -451,15 +472,16 @@ html, body {
 .stage-ladder-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .stage-btn {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   width: 100%;
-  padding: 9px 12px;
+  padding: 7px 11px;
   background: hsla(212, 36%, 10%, 0.85);
   border: 1px solid var(--line-subtle);
   border-radius: 4px;
@@ -553,20 +575,21 @@ html, body {
 
 .radio-comms-banner {
   position: fixed;
-  top: 56px;
+  top: 86px;
   left: 50%;
   transform: translateX(-50%);
   background: hsla(212, 42%, 8%, 0.88);
   border: 1px solid var(--line-strong);
   border-radius: 4px;
-  padding: 8px 18px;
+  padding: 7px 16px;
   display: flex;
   align-items: center;
   gap: 10px;
   font-family: var(--font-mono);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   backdrop-filter: blur(6px);
   transition: opacity 0.2s ease;
+  white-space: nowrap;
 }
 
 .radio-sender {
@@ -581,7 +604,7 @@ html, body {
 
 .alert-warning-banner {
   position: fixed;
-  top: 102px;
+  top: 130px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--hud-red-soft);
@@ -614,12 +637,14 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 230px;
+  min-width: 245px;
 }
 
 .hud-Bottom-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 18px;
   font-size: 0.78rem;
 }
 
