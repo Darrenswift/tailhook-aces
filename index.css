@@ -408,6 +408,49 @@ html, body {
 }
 
 /* Mission Selection Tabs & Launch Buttons */
+.mission-filter-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  background: hsla(212, 42%, 6%, 0.78);
+  padding: 4px;
+  border-radius: 5px;
+  border: 1px solid var(--line-subtle);
+  flex-shrink: 0;
+}
+
+.filter-tab {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 6px 4px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+  white-space: nowrap;
+}
+
+.filter-tab:hover {
+  color: var(--text-primary);
+  background: hsla(210, 30%, 20%, 0.6);
+}
+
+.filter-tab.active {
+  background: var(--hud-green-soft);
+  color: var(--hud-green);
+  border-color: var(--hud-green);
+}
+
+.mission-category-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
 .mode-block {
   background: var(--bg-surface);
   border: 1px solid var(--line-subtle);

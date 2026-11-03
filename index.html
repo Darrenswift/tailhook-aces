@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self';" />
   <title>TAILHOOK ACES — TOPGUN 3D Naval Fighter &amp; Carrier Simulator</title>
-  <meta name="description" content="3D browser-based Top Gun naval jet fighter game featuring Air-to-Air Wave Survival combat, Tower Flybys, and a 5-stage Carrier Landing Challenge ladder." />
+  <meta name="description" content="3D browser-based Top Gun naval jet fighter game featuring 9 iconic jets, Air-to-Ground Bombing Strikes, Special Ops, Wave Survival, and a 10-stage Carrier Landing Challenge." />
   <link rel="stylesheet" href="./index.css" />
 </head>
 <body>
@@ -30,7 +30,7 @@
       <button type="button" class="icon-btn" id="btn-toggle-music" title="Toggle Top Gun Anthem / Danger Zone Synth Music (B)">
         MUSIC: TOP GUN [B]
       </button>
-      <button type="button" class="icon-btn" id="btn-toggle-camera" title="Switch Chase / Cockpit HUD View (C)">
+      <button type="button" class="icon-btn" id="btn-toggle-camera" title="Switch Chase / Cockpit / LSO View (C)">
         CAM: CHASE [C]
       </button>
       <button type="button" class="icon-btn" id="btn-toggle-audio" title="Mute / Unmute Synthesized Audio (M)">
@@ -44,7 +44,7 @@
 
   <!-- Carrier Hangar / Main Menu -->
   <main class="hangar-overlay" id="hangar-screen">
-    <!-- Left Column: Pilot Callsign & Aircraft Selection -->
+    <!-- Left Column: Pilot Callsign & 9 Aircraft Selection -->
     <section class="hangar-column" aria-label="Pilot and Aircraft Selection">
       <div class="callsign-box">
         <label class="section-label" for="input-pilot-callsign">Top Gun Aviator Callsign</label>
@@ -72,74 +72,131 @@
         </div>
       </div>
 
-      <div class="section-label">Select TOPGUN Naval Fighter</div>
+      <div class="section-label">Select Fighter Aircraft (9 Jets)</div>
       <div class="jet-selector-list" id="jet-selector-list">
-        <!-- F/A-18E Super Hornet -->
+        <!-- 1. F/A-18E Super Hornet -->
         <button type="button" class="jet-card active" id="btn-select-f18" data-jet="f18">
           <div class="jet-card-header">
             <span class="jet-card-title">F/A-18E Super Hornet</span>
             <span class="jet-card-role">Maverick Hero Jet</span>
           </div>
-          <p class="jet-card-desc">Maverick's blue-and-black TOPGUN special livery, centerline drop tank, razor-sharp LERX turn rate &amp; 8 AIM-9X missiles.</p>
+          <p class="jet-card-desc">Maverick's blue-and-black TOPGUN special livery, centerline drop tank, razor-sharp LERX turn rate, 8x AIM-9X &amp; 6x JDAMs.</p>
           <div class="jet-stats-grid">
-            <div class="stat-item">
-              <span class="stat-label">SPEED</span>
-              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 84%"></div></div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">AGILITY</span>
-              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 88%"></div></div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">MISSILES</span>
-              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 80%"></div></div>
-            </div>
+            <div class="stat-item"><span class="stat-label">SPEED</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 82%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">AGILITY</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 88%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">PAYLOAD</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 82%"></div></div></div>
           </div>
         </button>
 
-        <!-- F-14D Super Tomcat -->
+        <!-- 2. F-14D Super Tomcat -->
         <button type="button" class="jet-card" id="btn-select-f14" data-jet="f14">
           <div class="jet-card-header">
             <span class="jet-card-title">F-14D Super Tomcat</span>
             <span class="jet-card-role">Maverick &amp; Goose VF-1</span>
           </div>
-          <p class="jet-card-desc">Iconic 2-seat tandem cockpit (Pilot + RIO), automatic variable-sweep wings, Mach 2.3+ afterburners &amp; 10-missile Phoenix payload.</p>
+          <p class="jet-card-desc">Iconic 2-seat tandem cockpit (Pilot + RIO), automatic variable-sweep wings, Mach 2.3+ afterburners, 10x Phoenix &amp; 6x Bombcat JDAMs.</p>
           <div class="jet-stats-grid">
-            <div class="stat-item">
-              <span class="stat-label">SPEED</span>
-              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 99%"></div></div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">AGILITY</span>
-              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 78%"></div></div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">MISSILES</span>
-              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%"></div></div>
-            </div>
+            <div class="stat-item"><span class="stat-label">SPEED</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 94%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">AGILITY</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 78%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">PAYLOAD</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 92%"></div></div></div>
           </div>
         </button>
 
-        <!-- F-35C Lightning II -->
+        <!-- 3. Lockheed Martin F-22A Raptor -->
+        <button type="button" class="jet-card" id="btn-select-f22" data-jet="f22">
+          <div class="jet-card-header">
+            <span class="jet-card-title">F-22A Raptor</span>
+            <span class="jet-card-role">Air Dominance King</span>
+          </div>
+          <p class="jet-card-desc">Lockheed Martin 5th-gen stealth dominator with 2D thrust-vectoring nozzles, diamond delta wings, supercruise &amp; 0.7s instant lock.</p>
+          <div class="jet-stats-grid">
+            <div class="stat-item"><span class="stat-label">SPEED</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 97%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">AGILITY</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 98%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">PAYLOAD</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 85%"></div></div></div>
+          </div>
+        </button>
+
+        <!-- 4. Sukhoi Su-57 Felon -->
+        <button type="button" class="jet-card" id="btn-select-su57" data-jet="su57">
+          <div class="jet-card-header">
+            <span class="jet-card-title">Sukhoi Su-57 Felon</span>
+            <span class="jet-card-role">5th-Gen Felon Ace</span>
+          </div>
+          <p class="jet-card-desc">Top Gun: Maverick's lethal 5th-gen adversary! Digital splinter shark camo, 3D thrust-vectoring Cobra authority, 8x R-77M &amp; 6x KAB-500 bombs.</p>
+          <div class="jet-stats-grid">
+            <div class="stat-item"><span class="stat-label">SPEED</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 96%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">AGILITY</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 99%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">PAYLOAD</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 85%"></div></div></div>
+          </div>
+        </button>
+
+        <!-- 5. Boeing F-15EX Eagle II -->
+        <button type="button" class="jet-card" id="btn-select-f15ex" data-jet="f15ex">
+          <div class="jet-card-header">
+            <span class="jet-card-title">Boeing F-15EX Eagle II</span>
+            <span class="jet-card-role">Mach 2.5 Bomb Truck</span>
+          </div>
+          <p class="jet-card-desc">Undefeated twin-tail Mach 2.5 heavy striker carrying the largest arsenal in the game: 12x air-to-air missiles + 8x 2,000-lb JDAM bombs!</p>
+          <div class="jet-stats-grid">
+            <div class="stat-item"><span class="stat-label">SPEED</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">AGILITY</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 83%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">PAYLOAD</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%"></div></div></div>
+          </div>
+        </button>
+
+        <!-- 6. Eurofighter Typhoon -->
+        <button type="button" class="jet-card" id="btn-select-typhoon" data-jet="typhoon">
+          <div class="jet-card-header">
+            <span class="jet-card-title">Eurofighter Typhoon</span>
+            <span class="jet-card-role">Delta-Canard Agile</span>
+          </div>
+          <p class="jet-card-desc">RAF No. 1 Squadron interceptor with active forward canard foreplanes, tail-less delta wing &amp; the fastest roll rate in the sky.</p>
+          <div class="jet-stats-grid">
+            <div class="stat-item"><span class="stat-label">SPEED</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 91%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">AGILITY</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">PAYLOAD</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 84%"></div></div></div>
+          </div>
+        </button>
+
+        <!-- 7. Sukhoi Su-35S Flanker-E -->
+        <button type="button" class="jet-card" id="btn-select-su35" data-jet="su35">
+          <div class="jet-card-header">
+            <span class="jet-card-title">Sukhoi Su-35 Flanker-E</span>
+            <span class="jet-card-role">3D Vectoring Cobra</span>
+          </div>
+          <p class="jet-card-desc">Three-tone sky-blue Flanker camouflage, white radome, tail sting boom, extreme high-AoA turn rate, 10x R-77 missiles &amp; 6x bombs.</p>
+          <div class="jet-stats-grid">
+            <div class="stat-item"><span class="stat-label">SPEED</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 93%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">AGILITY</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 96%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">PAYLOAD</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 92%"></div></div></div>
+          </div>
+        </button>
+
+        <!-- 8. Chengdu J-20 Mighty Dragon -->
+        <button type="button" class="jet-card" id="btn-select-j20" data-jet="j20">
+          <div class="jet-card-header">
+            <span class="jet-card-title">Chengdu J-20 Dragon</span>
+            <span class="jet-card-role">Stealth Canard-Delta</span>
+          </div>
+          <p class="jet-card-desc">Long-range dark graphite 5th-gen stealth interceptor with active forward canards, clipped delta wings, 10x PL-15 missiles &amp; 6x bombs.</p>
+          <div class="jet-stats-grid">
+            <div class="stat-item"><span class="stat-label">SPEED</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 95%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">AGILITY</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 94%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">PAYLOAD</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 92%"></div></div></div>
+          </div>
+        </button>
+
+        <!-- 9. F-35C Lightning II -->
         <button type="button" class="jet-card" id="btn-select-f35" data-jet="f35">
           <div class="jet-card-header">
             <span class="jet-card-title">F-35C Lightning II</span>
-            <span class="jet-card-role">5th-Gen Stealth</span>
+            <span class="jet-card-role">5th-Gen Carrier Stealth</span>
           </div>
-          <p class="jet-card-desc">Chined stealth fuselage, gold radar-absorbent canopy, extreme high-alpha dogfight agility &amp; rapid seeker lock-on.</p>
+          <p class="jet-card-desc">Carrier-variant stealth strike fighter with gold radar-absorbent canopy, rapid sensor-fusion lock-on, 8x AIM-9X &amp; 6x internal JDAMs.</p>
           <div class="jet-stats-grid">
-            <div class="stat-item">
-              <span class="stat-label">SPEED</span>
-              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 86%"></div></div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">AGILITY</span>
-              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 97%"></div></div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">MISSILES</span>
-              <div class="stat-bar-track"><div class="stat-bar-fill" style="width: 75%"></div></div>
-            </div>
+            <div class="stat-item"><span class="stat-label">SPEED</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 85%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">AGILITY</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 95%"></div></div></div>
+            <div class="stat-item"><span class="stat-label">PAYLOAD</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 82%"></div></div></div>
           </div>
         </button>
       </div>
@@ -155,75 +212,206 @@
       <div class="jet-showcase-caption">
         <div class="livery-badge" id="showcase-jet-livery">TOPGUN MAVERICK SPECIAL</div>
         <h2 id="showcase-jet-name">F/A-18E SUPER HORNET</h2>
-        <p id="showcase-jet-tagline">Maverick's Special Strike Livery • M61 Vulcan 20mm + 8x AIM-9X</p>
+        <p id="showcase-jet-tagline">Maverick's Special Strike Livery • 8x AIM-9X + 6x GBU-31 JDAM</p>
       </div>
     </section>
 
-    <!-- Right Column: Separate Game Modes -->
+    <!-- Right Column: Mission Command Center -->
     <section class="hangar-column" aria-label="Mission Mode Selection">
-      <div class="section-label">Mode 1: Danger Zone Dogfight</div>
-      <div class="mode-block">
-        <div class="mode-block-header">
-          <span class="mode-block-title">Top Gun Wave Survival</span>
-          <span class="mode-record" id="combat-high-score-label">BEST: WAVE 1 • 0 PTS</span>
-        </div>
-        <p class="mode-desc">
-          Scramble into the Danger Zone against black <strong>MiG-28 Aggressors</strong>, strike bombers, and <strong>5th-Gen Su-57 Felon Aces</strong>. <em>Bonus: Buzz the Carrier Tower at 350+ KTS for +250 PTS ("Negative Ghost Rider!")</em>
-        </p>
-        <button type="button" class="primary-launch-btn" id="btn-launch-combat">
-          SCRAMBLE TO THE DANGER ZONE
-        </button>
+      <div class="mission-filter-tabs" role="tablist" aria-label="Filter Mission Categories">
+        <button type="button" class="filter-tab active" data-filter="all">ALL</button>
+        <button type="button" class="filter-tab" data-filter="strike">BOMBING (3)</button>
+        <button type="button" class="filter-tab" data-filter="specops">SPECIAL OPS (3)</button>
+        <button type="button" class="filter-tab" data-filter="carrier">CARRIER (10)</button>
       </div>
 
-      <div class="section-label">Mode 2: Carrier Landing Challenges</div>
-      <div class="mode-block">
-        <div class="mode-block-header">
-          <span class="mode-block-title">5-Stage Tailhook Ladder</span>
-          <span class="mode-record">TARGET: #3 WIRE (~138 KTS)</span>
+      <!-- Category 1: Danger Zone Dogfight -->
+      <div class="mission-category-group" data-category="dogfight">
+        <div class="section-label">Mode 1: Danger Zone Dogfight</div>
+        <div class="mode-block">
+          <div class="mode-block-header">
+            <span class="mode-block-title">Top Gun Wave Survival</span>
+            <span class="mode-record" id="combat-high-score-label">BEST: WAVE 1 • 0 PTS</span>
+          </div>
+          <p class="mode-desc">
+            Scramble against black <strong>MiG-28 Aggressors</strong>, strike bombers, and <strong>5th-Gen Su-57 Felon Aces</strong>. <em>Buzz the Carrier Tower at 340+ KTS for +250 PTS!</em>
+          </p>
+          <button type="button" class="primary-launch-btn" id="btn-launch-combat">
+            SCRAMBLE TO THE DANGER ZONE
+          </button>
         </div>
-        <p class="mode-desc">
-          Deploy gear &amp; tailhook (<strong>L</strong>), call the ball, keep the Meatball centered, and trap on the angled flight deck.
-        </p>
-        <div class="stage-ladder-list" id="carrier-stage-list">
-          <button type="button" class="stage-btn" id="btn-carrier-stage-1" data-stage="1">
-            <div class="stage-btn-left">
-              <span class="stage-btn-title">Stage 1: Straight-In Calm Day</span>
-              <span class="stage-btn-sub">3.5 NM Final • Calm Seas • Clear Sky</span>
-            </div>
-            <span class="stage-grade-badge" id="badge-stage-1">UNFLOWN</span>
-          </button>
+      </div>
 
-          <button type="button" class="stage-btn" id="btn-carrier-stage-2" data-stage="2">
-            <div class="stage-btn-left">
-              <span class="stage-btn-title">Stage 2: Moving Deck &amp; Crosswind</span>
-              <span class="stage-btn-sub">22 KT Crosswind • Steaming Carrier (25 KTS)</span>
-            </div>
-            <span class="stage-grade-badge" id="badge-stage-2">UNFLOWN</span>
-          </button>
+      <!-- Category 2: Air-to-Ground Bombing Strike Missions (3 Missions) -->
+      <div class="mission-category-group" data-category="strike">
+        <div class="section-label">Mode 2: Air-to-Ground Bombing Strikes</div>
+        <div class="mode-block">
+          <div class="mode-block-header">
+            <span class="mode-block-title">3 Precision Bombing Sorties</span>
+            <span class="mode-record">PRESS [V] TO DROP JDAM</span>
+          </div>
+          <p class="mode-desc">
+            Align the <strong>HUD CCIP Bombing Pipper</strong> over ground &amp; naval targets and press <strong>[V]</strong> to release 2,000-lb guided GBU-31 JDAM bombs!
+          </p>
+          <div class="stage-ladder-list" id="strike-mission-list">
+            <button type="button" class="stage-btn strike-btn" data-strike="1">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Strike 1: Maverick Canyon Bunker Run</span>
+                <span class="stage-btn-sub">Stay Under 850 FT Radar Ceiling • Bomb Uranium Crater + Exfil</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-strike-1">UNFLOWN</span>
+            </button>
 
-          <button type="button" class="stage-btn" id="btn-carrier-stage-3" data-stage="3">
-            <div class="stage-btn-left">
-              <span class="stage-btn-title">Stage 3: Case I Overhead Break</span>
-              <span class="stage-btn-sub">Pass Carrier at 800 FT / 350 KTS • 180° Break Turn</span>
-            </div>
-            <span class="stage-grade-badge" id="badge-stage-3">UNFLOWN</span>
-          </button>
+            <button type="button" class="stage-btn strike-btn" data-strike="2">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Strike 2: Island SEAD &amp; SAM Suppression</span>
+                <span class="stage-btn-sub">Destroy 6 Island Radar Domes, S-400 SAMs &amp; Fuel Depots</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-strike-2">UNFLOWN</span>
+            </button>
 
-          <button type="button" class="stage-btn" id="btn-carrier-stage-4" data-stage="4">
-            <div class="stage-btn-left">
-              <span class="stage-btn-title">Stage 4: Sunset Heavy Seas</span>
-              <span class="stage-btn-sub">Pitching Flight Deck • Golden-Hour Turbulence</span>
-            </div>
-            <span class="stage-grade-badge" id="badge-stage-4">UNFLOWN</span>
-          </button>
+            <button type="button" class="stage-btn strike-btn" data-strike="3">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Strike 3: Crimson Fleet Naval Strike</span>
+                <span class="stage-btn-sub">Sink 4 Enemy Guided-Missile Destroyers &amp; Battlecruiser</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-strike-3">UNFLOWN</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
-          <button type="button" class="stage-btn" id="btn-carrier-stage-5" data-stage="5">
-            <div class="stage-btn-left">
-              <span class="stage-btn-title">Stage 5: Night &amp; Fog Instrument Trap</span>
-              <span class="stage-btn-sub">Low Visibility • Illuminated Deck &amp; HUD Approach</span>
-            </div>
-            <span class="stage-grade-badge" id="badge-stage-5">UNFLOWN</span>
-          </button>
+      <!-- Category 3: Fun Special Operations Missions (3 Missions) -->
+      <div class="mission-category-group" data-category="specops">
+        <div class="section-label">Mode 3: Special Operations &amp; Arcade Action</div>
+        <div class="mode-block">
+          <div class="mode-block-header">
+            <span class="mode-block-title">3 Top Gun Special Sorties</span>
+            <span class="mode-record">WINGMAN • RINGS • FLEET</span>
+          </div>
+          <p class="mode-desc">
+            High-adrenaline special missions: supersonic canyon ring racing, defending USS Nimitz from bomber waves, and wingman boss showdowns!
+          </p>
+          <div class="stage-ladder-list" id="specops-mission-list">
+            <button type="button" class="stage-btn specops-btn" data-specops="1">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Op 1: Mach 10 Canyon Ring Time-Trial</span>
+                <span class="stage-btn-sub">Blast Through 16 Glowing Sky Gates Around Islands &amp; Carrier</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-specops-1">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn specops-btn" data-specops="2">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Op 2: Defend the Fleet (Carrier Escort)</span>
+                <span class="stage-btn-sub">Splash 3 Waves of Heavy Tu-22M Bombers Before They Sink CVN-68!</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-specops-2">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn specops-btn" data-specops="3">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Op 3: Maverick &amp; Rooster Wingman Sortie</span>
+                <span class="stage-btn-sub">Dogfight Crimson Ace Squadron with AI Wingman + Carrier Trap!</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-specops-3">UNFLOWN</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category 4: 10-Stage Carrier Landing Challenges -->
+      <div class="mission-category-group" data-category="carrier">
+        <div class="section-label">Mode 4: 10-Stage Carrier Landing Ladder</div>
+        <div class="mode-block">
+          <div class="mode-block-header">
+            <span class="mode-block-title">10-Stage Tailhook Qualification</span>
+            <span class="mode-record">TARGET: #3 WIRE (~138 KTS)</span>
+          </div>
+          <p class="mode-desc">
+            Deploy gear &amp; tailhook (<strong>L</strong>), call the ball, and trap on CVN-68 across 10 escalating weather &amp; emergency scenarios.
+          </p>
+          <div class="stage-ladder-list" id="carrier-stage-list">
+            <button type="button" class="stage-btn carrier-stage-btn" data-stage="1">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Stage 1: Straight-In Calm Day</span>
+                <span class="stage-btn-sub">3.5 NM Final • Calm Seas • Clear Sky</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-stage-1">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn carrier-stage-btn" data-stage="2">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Stage 2: Moving Deck &amp; Crosswind</span>
+                <span class="stage-btn-sub">22 KT Crosswind • Steaming Carrier (25 KTS)</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-stage-2">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn carrier-stage-btn" data-stage="3">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Stage 3: Case I Overhead Break</span>
+                <span class="stage-btn-sub">Pass Carrier at 800 FT / 350 KTS • 180° Break Turn</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-stage-3">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn carrier-stage-btn" data-stage="4">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Stage 4: Sunset Heavy Seas</span>
+                <span class="stage-btn-sub">Pitching Flight Deck • Golden-Hour Turbulence</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-stage-4">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn carrier-stage-btn" data-stage="5">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Stage 5: Night &amp; Fog Instrument Trap</span>
+                <span class="stage-btn-sub">Low Visibility • Illuminated Deck &amp; HUD Approach</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-stage-5">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn carrier-stage-btn" data-stage="6">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Stage 6: Single-Engine Flameout Emergency</span>
+                <span class="stage-btn-sub">Starboard Engine Out • Asymmetric Yaw Pull &amp; Smoke</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-stage-6">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn carrier-stage-btn" data-stage="7">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Stage 7: "Cobra" High-Speed Short-Field Trap</span>
+                <span class="stage-btn-sub">Hot 275 KT Entry at 1.1 NM • Bleed Speed &amp; Drop Gear!</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-stage-7">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn carrier-stage-btn" data-stage="8">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Stage 8: Typhoon Cyclone &amp; Gusting Squall</span>
+                <span class="stage-btn-sub">38 KT Shifting Wind Shear • Violent Pitching Deck</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-stage-8">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn carrier-stage-btn" data-stage="9">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Stage 9: "Broken Meatball" LSO Talk-Down</span>
+                <span class="stage-btn-sub">Optical Ball &amp; Boxes Out • Pure LSO Voice Guidance</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-stage-9">UNFLOWN</span>
+            </button>
+
+            <button type="button" class="stage-btn carrier-stage-btn" data-stage="10">
+              <div class="stage-btn-left">
+                <span class="stage-btn-title">Stage 10: Evasive S-Turning Carrier</span>
+                <span class="stage-btn-sub">CVN-68 Executing High-Speed Evasive S-Turns at Dusk</span>
+              </div>
+              <span class="stage-grade-badge" id="badge-stage-10">UNFLOWN</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -234,12 +422,13 @@
       <div class="key-hint"><span class="kbd-tag">← / →</span> Roll Left / Right</div>
       <div class="key-hint"><span class="kbd-tag">W / S</span> Throttle / Afterburner</div>
       <div class="key-hint"><span class="kbd-tag">A / D</span> Rudder Yaw</div>
-      <div class="key-hint"><span class="kbd-tag">SPACE</span> 20mm Vulcan Cannon</div>
-      <div class="key-hint"><span class="kbd-tag">F</span> Fire AIM-9X Missile</div>
+      <div class="key-hint"><span class="kbd-tag">SPACE</span> 20mm Vulcan</div>
+      <div class="key-hint"><span class="kbd-tag">F</span> Fire Missile</div>
+      <div class="key-hint"><span class="kbd-tag">V</span> Drop JDAM Bomb</div>
       <div class="key-hint"><span class="kbd-tag">G</span> Drop Flares</div>
-      <div class="key-hint"><span class="kbd-tag">L</span> Gear &amp; Tailhook</div>
-      <div class="key-hint"><span class="kbd-tag">C</span> Cockpit / Chase Cam</div>
-      <div class="key-hint"><span class="kbd-tag">B</span> Top Gun Music</div>
+      <div class="key-hint"><span class="kbd-tag">L</span> Gear &amp; Hook</div>
+      <div class="key-hint"><span class="kbd-tag">C</span> Cam View</div>
+      <div class="key-hint"><span class="kbd-tag">B</span> Music</div>
     </footer>
   </main>
 
@@ -274,7 +463,7 @@
     </div>
 
     <div class="in-flight-help-strip" id="in-flight-help-strip">
-      [↑/↓] Pitch • [←/→] Roll • [W/S] Throttle • [SPACE] Guns • [F] Missile • [G] Flares • [L] Gear/Hook • [C] Cam • [B] Music
+      [↑/↓] Pitch • [←/→] Roll • [W/S] Throttle • [SPACE] Guns • [F] Missile • [V] Drop Bomb • [G] Flares • [L] Gear/Hook • [C] Cam
     </div>
 
     <div class="hud-bottom-right">
@@ -287,8 +476,12 @@
         <span class="hud-val" id="hud-gun-val">READY [SPACE]</span>
       </div>
       <div class="hud-Bottom-row">
-        <span class="hud-label">AIM-9X SIDEWINDER</span>
+        <span class="hud-label">A2A MISSILES</span>
         <span class="hud-val" id="hud-missile-val">8 [F]</span>
+      </div>
+      <div class="hud-Bottom-row">
+        <span class="hud-label">JDAM BOMBS</span>
+        <span class="hud-val" id="hud-bomb-val">6 [V]</span>
       </div>
       <div class="hud-Bottom-row">
         <span class="hud-label">FLARE DECOYS</span>
@@ -308,7 +501,7 @@
       <div class="debrief-metrics" id="debrief-metrics"></div>
       <div class="debrief-actions">
         <button type="button" class="secondary-btn" id="btn-debrief-retry">FLY AGAIN</button>
-        <button type="button" class="primary-launch-btn" id="btn-debrief-next" style="flex: 1">NEXT STAGE</button>
+        <button type="button" class="primary-launch-btn" id="btn-debrief-next" style="flex: 1">NEXT MISSION</button>
         <button type="button" class="secondary-btn" id="btn-debrief-hangar">HANGAR</button>
       </div>
     </div>

@@ -109,7 +109,7 @@ export class SoundSystem {
   startMusicLoop() {
     if (this.musicIntervalId) clearInterval(this.musicIntervalId);
 
-    // 16th-note step clock (~145ms per step)
+    // 16th-note step clock (~140ms per step)
     this.musicIntervalId = setInterval(() => {
       if (!this.ctx || this.muted || !this.musicEnabled || this.ctx.state !== 'running') return;
 
@@ -129,7 +129,7 @@ export class SoundSystem {
     osc1.type = 'sawtooth';
     osc2.type = 'square';
     osc1.frequency.setValueAtTime(freq, now);
-    osc2.frequency.setValueAtTime(freq * 1.004, now);
+    osc2.frequency.setValueAtTime(freq * 1.004, now); // Rich 80s chorus detune
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
@@ -213,6 +213,7 @@ export class SoundSystem {
       osc.start(now);
       osc.stop(now + 0.14);
     } else if (type === 'snare' && this.noiseBuffer) {
+      // Classic 80s gated-reverb snare
       const src = this.ctx.createBufferSource();
       src.buffer = this.noiseBuffer;
       const filter = this.ctx.createBiquadFilter();
@@ -230,24 +231,26 @@ export class SoundSystem {
   }
 
   stepTopGunAnthem(step) {
-    if (step === 0) this.playSynthPadChord([130.81, 196.0, 261.63, 329.63], 2.2);
-    if (step === 16) this.playSynthPadChord([98.0, 196.0, 246.94, 293.66], 2.2);
-    if (step === 32) this.playSynthPadChord([87.31, 174.61, 220.0, 261.63], 2.2);
-    if (step === 48) this.playSynthPadChord([98.0, 196.0, 246.94, 293.66], 2.2);
+    // Warm 80s Top Gun Anthem in C Major (Heroic Bell + Guitar Lead & Warm Pad Chords)
+    if (step === 0) this.playSynthPadChord([130.81, 196.0, 261.63, 329.63], 2.2); // C Maj
+    if (step === 16) this.playSynthPadChord([98.0, 196.0, 246.94, 293.66], 2.2);  // G Maj
+    if (step === 32) this.playSynthPadChord([87.31, 174.61, 220.0, 261.63], 2.2); // F Maj
+    if (step === 48) this.playSynthPadChord([98.0, 196.0, 246.94, 293.66], 2.2);  // G Maj
 
+    // Heroic Anthem Lead Melody (C4 -> G4 -> F4 -> E4 -> D4 -> C4 -> G4)
     const melody = {
-      0: [261.63, 0.85],
-      6: [392.00, 0.85],
-      12: [392.00, 0.55],
-      16: [349.23, 0.42],
-      20: [329.63, 0.42],
-      24: [293.66, 0.42],
-      28: [523.25, 0.85],
-      34: [392.00, 1.1],
-      44: [349.23, 0.42],
-      48: [329.63, 0.42],
-      52: [293.66, 0.55],
-      56: [392.00, 0.95]
+      0: [261.63, 0.85],  // C4
+      6: [392.00, 0.85],  // G4
+      12: [392.00, 0.55], // G4
+      16: [349.23, 0.42], // F4
+      20: [329.63, 0.42], // E4
+      24: [293.66, 0.42], // D4
+      28: [523.25, 0.85], // C5
+      34: [392.00, 1.1],  // G4
+      44: [349.23, 0.42], // F4
+      48: [329.63, 0.42], // E4
+      52: [293.66, 0.55], // D4
+      56: [392.00, 0.95]  // G4
     };
     if (melody[step]) {
       this.playSynthLeadNote(melody[step][0], melody[step][1], 0.038);
@@ -257,27 +260,29 @@ export class SoundSystem {
   }
 
   stepDangerZone(step) {
+    // High-energy 80s Synthwave "Danger Zone" Driving Bassline (D Minor / C / Bb / C)
     const bar = Math.floor(step / 16);
-    const rootBass = [73.42, 65.41, 58.27, 65.41][bar];
+    const rootBass = [73.42, 65.41, 58.27, 65.41][bar]; // D2, C2, Bb1, C2
     const octaveFreq = step % 2 === 0 ? rootBass : rootBass * 2;
     this.playSynthBass(octaveFreq, 0.12, 0.042);
 
     if (step % 4 === 0) this.play80sDrum('kick');
     if (step % 8 === 4) this.play80sDrum('snare');
 
+    // Syncopated Danger Zone Riff Stabs
     const riff = {
-      0: [293.66, 0.35],
-      3: [349.23, 0.35],
-      6: [392.00, 0.45],
-      16: [261.63, 0.35],
-      19: [349.23, 0.35],
-      22: [329.63, 0.45],
-      32: [233.08, 0.35],
-      35: [293.66, 0.35],
-      38: [349.23, 0.45],
-      48: [329.63, 0.35],
-      51: [392.00, 0.35],
-      54: [440.00, 0.55]
+      0: [293.66, 0.35],  // D4
+      3: [349.23, 0.35],  // F4
+      6: [392.00, 0.45],  // G4
+      16: [261.63, 0.35], // C4
+      19: [349.23, 0.35], // F4
+      22: [329.63, 0.45], // E4
+      32: [233.08, 0.35], // Bb3
+      35: [293.66, 0.35], // D4
+      38: [349.23, 0.45], // F4
+      48: [329.63, 0.35], // E4
+      51: [392.00, 0.35], // G4
+      54: [440.00, 0.55]  // A4
     };
     if (riff[step]) {
       this.playSynthLeadNote(riff[step][0], riff[step][1], 0.032);
@@ -396,6 +401,44 @@ export class SoundSystem {
     gain.connect(this.ctx.destination);
     osc.start(now);
     osc.stop(now + 0.15);
+  }
+
+  playBombDrop() {
+    if (this.muted || !this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // Pylon release clunk + falling bomb whistle
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(640, now);
+    osc.frequency.exponentialRampToValueAtTime(195, now + 0.55);
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.004, now + 0.55);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.58);
+  }
+
+  playCheckpointChime() {
+    if (this.muted || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + i * 0.055);
+      gain.gain.setValueAtTime(0.09, now + i * 0.055);
+      gain.gain.exponentialRampToValueAtTime(0.002, now + i * 0.055 + 0.22);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + i * 0.055);
+      osc.stop(now + i * 0.055 + 0.24);
+    });
   }
 
   playExplosion(intensity = 1.0) {
