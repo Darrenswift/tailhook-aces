@@ -4,17 +4,21 @@ export const JET_CONFIGS = {
   f18: {
     id: 'f18',
     name: 'F/A-18E SUPER HORNET',
+    shortName: 'F/A-18E Super Hornet',
+    roleBadge: 'Maverick Hero Jet',
     liveryName: 'TOPGUN MAVERICK SPECIAL',
-    tagline: "Maverick's Special Strike Livery • M61 Vulcan 20mm + 8x AIM-9X",
+    tagline: "Maverick's Special Strike Livery • 8x AIM-9X + 6x GBU-31 JDAM",
+    desc: "Maverick's blue-and-black TOPGUN special livery, centerline drop tank, razor-sharp LERX turn rate & balanced strike payload.",
     maxSpeedKts: 670,
     cruiseSpeedKts: 345,
     minSpeedKts: 112,
     idealApproachKts: 138,
-    pitchRate: 1.58,
-    rollRate: 2.8,
-    yawRate: 0.86,
-    lockTimeSec: 1.15,
+    pitchRate: 1.62,
+    rollRate: 2.85,
+    yawRate: 0.88,
+    lockTimeSec: 1.05,
     missiles: 8,
+    bombs: 6,
     flares: 12,
     bodyColor: 0x8997a7,
     accentColor: 0x161c24,
@@ -24,17 +28,21 @@ export const JET_CONFIGS = {
   f14: {
     id: 'f14',
     name: 'F-14D SUPER TOMCAT',
+    shortName: 'F-14D Super Tomcat',
+    roleBadge: 'Maverick & Goose VF-1',
     liveryName: 'VF-1 WOLFPACK / MAVERICK & GOOSE',
-    tagline: 'Two-Seat Swing-Wing Legend • Mach 2.3 Afterburners + AIM-54 Phoenix',
+    tagline: 'Two-Seat Swing-Wing Legend • Mach 2.3 Afterburners + 10x AIM-54 + 6x Bombcat JDAM',
+    desc: 'Iconic 2-seat tandem cockpit (Pilot + RIO), automatic variable-sweep wings, Mach 2.3+ afterburners & 10-missile payload.',
     maxSpeedKts: 790,
     cruiseSpeedKts: 375,
     minSpeedKts: 118,
     idealApproachKts: 142,
-    pitchRate: 1.45,
-    rollRate: 2.5,
-    yawRate: 0.8,
-    lockTimeSec: 1.1,
+    pitchRate: 1.48,
+    rollRate: 2.55,
+    yawRate: 0.82,
+    lockTimeSec: 1.0,
     missiles: 10,
+    bombs: 6,
     flares: 14,
     bodyColor: 0x9aa6b2,
     accentColor: 0x181d24,
@@ -44,22 +52,170 @@ export const JET_CONFIGS = {
   f35: {
     id: 'f35',
     name: 'F-35C LIGHTNING II',
+    shortName: 'F-35C Lightning II',
+    roleBadge: '5th-Gen Carrier Stealth',
     liveryName: 'TOPGUN STEALTH AGGRESSOR',
-    tagline: '5th-Gen Carrier Stealth Fighter • Gold RAM Canopy + Rapid Lock Seeker',
-    maxSpeedKts: 690,
+    tagline: '5th-Gen Carrier Stealth Fighter • Gold RAM Canopy + Rapid Seeker & 6x Internal JDAM',
+    desc: 'Chined stealth fuselage, gold radar-absorbent canopy, extreme high-alpha dogfight agility & rapid seeker lock-on.',
+    maxSpeedKts: 695,
     cruiseSpeedKts: 355,
     minSpeedKts: 110,
     idealApproachKts: 136,
-    pitchRate: 1.85,
-    rollRate: 3.15,
-    yawRate: 0.96,
-    lockTimeSec: 0.8,
-    missiles: 6,
+    pitchRate: 1.88,
+    rollRate: 3.18,
+    yawRate: 0.98,
+    lockTimeSec: 0.78,
+    missiles: 8,
+    bombs: 6,
     flares: 14,
     bodyColor: 0x464e59,
     accentColor: 0x262b33,
     stripeColor: 0x38bdf8,
     noseColor: 0x2e343d
+  },
+  f22: {
+    id: 'f22',
+    name: 'LOCKHEED MARTIN F-22A RAPTOR',
+    shortName: 'F-22A Raptor',
+    roleBadge: 'Air Dominance King',
+    liveryName: '1ST FIGHTER WING • METALLIC RAPTOR STEALTH',
+    tagline: '2D Thrust-Vectoring Nozzles • Diamond Stealth Wing + 8x AIM-120D & 6x GBU-32',
+    desc: 'Unmatched 5th-gen air dominance fighter with 2D thrust-vectoring nozzles, metallic titanium stealth finish & supercruise.',
+    maxSpeedKts: 825,
+    cruiseSpeedKts: 395,
+    minSpeedKts: 108,
+    idealApproachKts: 135,
+    pitchRate: 2.08,
+    rollRate: 3.38,
+    yawRate: 1.1,
+    lockTimeSec: 0.7,
+    missiles: 8,
+    bombs: 6,
+    flares: 16,
+    bodyColor: 0x64707d,
+    accentColor: 0x343c46,
+    stripeColor: 0x94a3b8,
+    noseColor: 0x293038
+  },
+  su57: {
+    id: 'su57',
+    name: 'SUKHOI SU-57 FELON',
+    shortName: 'Sukhoi Su-57 Felon',
+    roleBadge: '5th-Gen Felon Ace',
+    liveryName: 'TOPGUN MAVERICK • DIGITAL SPLINTER FELON',
+    tagline: '3D Thrust-Vectoring Supermaneuverability • Digital Shark Camo + 8x R-77M & 6x KAB-500',
+    desc: 'The lethal 5th-Gen enemy ace from Top Gun: Maverick! Digital splinter camouflage, extreme Cobra pitch authority & twin heavy bays.',
+    maxSpeedKts: 815,
+    cruiseSpeedKts: 390,
+    minSpeedKts: 106,
+    idealApproachKts: 136,
+    pitchRate: 2.15,
+    rollRate: 3.42,
+    yawRate: 1.16,
+    lockTimeSec: 0.74,
+    missiles: 8,
+    bombs: 6,
+    flares: 16,
+    bodyColor: 0x384352,
+    accentColor: 0x1b222c,
+    stripeColor: 0xd9222b,
+    noseColor: 0x181d24
+  },
+  f15ex: {
+    id: 'f15ex',
+    name: 'BOEING F-15EX EAGLE II',
+    shortName: 'Boeing F-15EX Eagle II',
+    roleBadge: 'Mach 2.5 Bomb Truck',
+    liveryName: '104TH FW • HEAVY STRIKE EAGLE II',
+    tagline: 'Undefeated Mach 2.5 Heavy Striker • Massive 12x Missile & 8x 2,000-LB JDAM Payload',
+    desc: 'Twin-tailed Mach 2.5 powerhouse carrying the heaviest arsenal in the fleet: 12 air-to-air missiles plus 8 heavy guided bombs!',
+    maxSpeedKts: 860,
+    cruiseSpeedKts: 405,
+    minSpeedKts: 116,
+    idealApproachKts: 144,
+    pitchRate: 1.68,
+    rollRate: 2.95,
+    yawRate: 0.94,
+    lockTimeSec: 0.84,
+    missiles: 12,
+    bombs: 8,
+    flares: 18,
+    bodyColor: 0x7b8998,
+    accentColor: 0x384350,
+    stripeColor: 0xf59e0b,
+    noseColor: 0x2d3642
+  },
+  typhoon: {
+    id: 'typhoon',
+    name: 'EUROFIGHTER TYPHOON FGR4',
+    shortName: 'Eurofighter Typhoon',
+    roleBadge: 'Delta-Canard Agile',
+    liveryName: 'RAF NO. 1 SQUADRON • NATO INTERCEPTOR',
+    tagline: 'Active Forward Canard Foreplanes + Tail-Less Delta Wing • 8x Meteor + 6x Paveway IV',
+    desc: 'European delta-canard dogfighter with animated forward canards, single tall vertical fin & the fastest roll rate in the sky.',
+    maxSpeedKts: 780,
+    cruiseSpeedKts: 375,
+    minSpeedKts: 105,
+    idealApproachKts: 134,
+    pitchRate: 2.2,
+    rollRate: 3.65,
+    yawRate: 1.06,
+    lockTimeSec: 0.76,
+    missiles: 8,
+    bombs: 6,
+    flares: 14,
+    bodyColor: 0x8694a4,
+    accentColor: 0x242c36,
+    stripeColor: 0xef4444,
+    noseColor: 0x3b4552
+  },
+  su35: {
+    id: 'su35',
+    name: 'SUKHOI SU-35S FLANKER-E',
+    shortName: 'Sukhoi Su-35 Flanker-E',
+    roleBadge: '3D Vectoring Cobra',
+    liveryName: 'RUSSIAN KNIGHTS • SKY-BLUE FLANKER CAMO',
+    tagline: 'Tri-Tone Sky Camo • Central Tail Sting + 10x R-77 Adder & 6x Guided Bombs',
+    desc: 'Iconic Flanker silhouette with three-tone azure camouflage, white radome, tail sting boom & extreme high-AoA maneuverability.',
+    maxSpeedKts: 795,
+    cruiseSpeedKts: 382,
+    minSpeedKts: 108,
+    idealApproachKts: 137,
+    pitchRate: 2.1,
+    rollRate: 3.28,
+    yawRate: 1.12,
+    lockTimeSec: 0.8,
+    missiles: 10,
+    bombs: 6,
+    flares: 16,
+    bodyColor: 0x4b779e,
+    accentColor: 0x1e3852,
+    stripeColor: 0x38bdf8,
+    noseColor: 0xeef4fa
+  },
+  j20: {
+    id: 'j20',
+    name: 'CHENGDU J-20 MIGHTY DRAGON',
+    shortName: 'Chengdu J-20 Dragon',
+    roleBadge: 'Stealth Canard-Delta',
+    liveryName: 'DARK GRAPHITE • MIGHTY DRAGON STEALTH',
+    tagline: 'Long-Range Chined Stealth Canard-Delta • 10x PL-15 Long-Range Missiles + 6x Precision Bombs',
+    desc: 'Sleek long-fuselage 5th-gen stealth fighter combining forward stealth canards, clipped delta wings & canted twin V-tails.',
+    maxSpeedKts: 810,
+    cruiseSpeedKts: 388,
+    minSpeedKts: 110,
+    idealApproachKts: 138,
+    pitchRate: 1.98,
+    rollRate: 3.32,
+    yawRate: 1.05,
+    lockTimeSec: 0.75,
+    missiles: 10,
+    bombs: 6,
+    flares: 16,
+    bodyColor: 0x323944,
+    accentColor: 0x181c23,
+    stripeColor: 0x64748b,
+    noseColor: 0x1f242d
   }
 };
 
@@ -68,7 +224,7 @@ const materialCache = new Map();
 const tailMaterialCache = new Map();
 
 function getAircraftMaterialSet(type, bodyHex, accentHex, stripeHex, isEnemy) {
-  const key = `${type}-${bodyHex}-${accentHex}-${stripeHex}`;
+  const key = `${type}-${bodyHex}-${accentHex}-${stripeHex}-${isEnemy}`;
   if (materialCache.has(key)) return materialCache.get(key);
 
   // 1. Color Albedo Canvas (512x512)
@@ -90,28 +246,55 @@ function getAircraftMaterialSet(type, bodyHex, accentHex, stripeHex, isEnemy) {
   ctx.fillStyle = `#${baseColor.getHexString()}`;
   ctx.fillRect(0, 0, 512, 512);
 
-  bCtx.fillStyle = '#808080'; // Neutral bump height
+  bCtx.fillStyle = '#808080';
   bCtx.fillRect(0, 0, 512, 512);
 
-  // If Su-57 5th-Gen Felon ('su33'), paint digital splinter camo blocks
-  if (type === 'su33') {
-    const camoColors = ['#2d3744', '#566575', '#1b222c'];
-    for (let i = 0; i < 36; i++) {
+  if (type === 'su33' || type === 'su57') {
+    // Digital splinter shark camo blocks for Su-57 Felon
+    const camoColors = ['#2d3744', '#637487', '#1b222c', '#8293a6'];
+    for (let i = 0; i < 42; i++) {
       ctx.fillStyle = camoColors[i % camoColors.length];
-      ctx.fillRect((i * 83) % 460, (i * 59) % 460, 75, 45);
+      ctx.fillRect((i * 83) % 460, (i * 59) % 460, 72, 42);
+    }
+  } else if (type === 'su35') {
+    // Russian Flanker 3-Tone Sky-Blue / Azure Camouflage
+    const flankerColors = ['#3c6894', '#6b9ec9', '#254463', '#8cb9de'];
+    for (let i = 0; i < 34; i++) {
+      ctx.fillStyle = flankerColors[i % flankerColors.length];
+      ctx.beginPath();
+      ctx.ellipse(
+        (i * 97) % 480,
+        (i * 67) % 480,
+        58 + (i % 3) * 18,
+        36 + (i % 2) * 16,
+        (i % 4) * 0.4,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+  } else if (type === 'f22' || type === 'j20') {
+    // Raptor / Mighty Dragon geometric stealth RAM edge panels
+    const ramColors =
+      type === 'f22'
+        ? ['#515c69', '#778594', '#424b57']
+        : ['#262c35', '#3d4654', '#1d2229'];
+    for (let i = 0; i < 30; i++) {
+      ctx.fillStyle = ramColors[i % ramColors.length];
+      ctx.fillRect((i * 79) % 460, (i * 53) % 460, 68, 48);
     }
   } else {
     // Subtle metallic panel shade variation & airflow weathering streaks
     for (let i = 0; i < 28; i++) {
-      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.035)' : 'rgba(0,0,0,0.045)';
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.038)' : 'rgba(0,0,0,0.048)';
       ctx.fillRect((i * 73) % 480, (i * 41) % 480, 64 + (i % 3) * 36, 44 + (i % 4) * 32);
     }
   }
 
-  // Engraved Aerospace Panel Seams (drawn onto both Color and Bump maps)
+  // Engraved Aerospace Panel Seams
   ctx.strokeStyle = isEnemy ? 'rgba(0, 0, 0, 0.45)' : 'rgba(18, 26, 36, 0.34)';
   ctx.lineWidth = 2;
-  bCtx.strokeStyle = '#303030'; // Deep panel groove in bump map
+  bCtx.strokeStyle = '#303030';
   bCtx.lineWidth = 3;
 
   for (let y = 48; y < 512; y += 64) {
@@ -125,7 +308,6 @@ function getAircraftMaterialSet(type, bodyHex, accentHex, stripeHex, isEnemy) {
     bCtx.lineTo(512, y);
     bCtx.stroke();
 
-    // Raised rivets along panel seams
     bCtx.fillStyle = '#c8c8c8';
     for (let rx = 12; rx < 512; rx += 18) {
       bCtx.fillRect(rx, y - 5, 2, 2);
@@ -145,31 +327,44 @@ function getAircraftMaterialSet(type, bodyHex, accentHex, stripeHex, isEnemy) {
     bCtx.stroke();
   }
 
-  // Top Gun Livery Racing Stripes
+  // Livery Racing Stripes
   if (type === 'f18') {
-    // Maverick's iconic black spine band bordered by dual electric-blue stripes
     ctx.fillStyle = `#${accentColor.getHexString()}`;
     ctx.fillRect(0, 196, 512, 52);
     ctx.fillStyle = `#${stripeColor.getHexString()}`;
     ctx.fillRect(0, 184, 512, 9);
     ctx.fillRect(0, 251, 512, 9);
   } else if (type === 'f14') {
-    // VF-1 / VF-84 high-contrast black-and-gold squadron trim
     ctx.fillStyle = `#${accentColor.getHexString()}`;
     ctx.fillRect(0, 200, 512, 34);
     ctx.fillStyle = `#${stripeColor.getHexString()}`;
     ctx.fillRect(0, 236, 512, 10);
   } else {
     ctx.fillStyle = `#${stripeColor.getHexString()}`;
-    ctx.fillRect(0, 212, 512, 22);
+    ctx.fillRect(0, 212, 512, 18);
   }
 
   // Wing & Fuselage Roundel Insignia
-  if (isEnemy) {
-    // Red Star with crisp white outline (Top Gun MiG-28 / Su-57 style)
-    drawStar(ctx, 256, 140, 5, 28, 12, '#e61919', '#ffffff');
+  if (isEnemy || type === 'su57' || type === 'su35' || type === 'j20') {
+    const starFill = type === 'j20' ? '#d9222b' : '#e61919';
+    const starStroke = type === 'j20' ? '#f5b82e' : '#ffffff';
+    drawStar(ctx, 256, 140, 5, 28, 12, starFill, starStroke);
+  } else if (type === 'typhoon') {
+    // RAF Bullseye Roundel (Blue outer, White mid, Red center)
+    ctx.beginPath();
+    ctx.arc(256, 140, 26, 0, Math.PI * 2);
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(256, 140, 17, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(256, 140, 9, 0, Math.PI * 2);
+    ctx.fillStyle = '#dc2626';
+    ctx.fill();
   } else {
-    // US Navy National Star-and-Bars Roundel
+    // US National Star-and-Bars Roundel
     ctx.fillStyle = '#1b2838';
     ctx.fillRect(204, 128, 104, 24);
     ctx.strokeStyle = '#d8e4f0';
@@ -191,13 +386,14 @@ function getAircraftMaterialSet(type, bodyHex, accentHex, stripeHex, isEnemy) {
   bumpTex.wrapS = THREE.RepeatWrapping;
   bumpTex.wrapT = THREE.RepeatWrapping;
 
+  const isMetallicStealth = type === 'f22' || type === 'mig29';
   const bodyMat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     map: colorTex,
     bumpMap: bumpTex,
     bumpScale: 0.032,
-    roughness: type === 'mig29' ? 0.24 : 0.34,
-    metalness: type === 'mig29' ? 0.72 : 0.62
+    roughness: isMetallicStealth ? 0.24 : 0.34,
+    metalness: isMetallicStealth ? 0.74 : 0.62
   });
 
   materialCache.set(key, bodyMat);
@@ -228,22 +424,25 @@ function drawStar(ctx, cx, cy, spikes, outerR, innerR, fillStyle, strokeStyle) {
 }
 
 function getTailFinMaterial(type, isEnemy) {
-  if (tailMaterialCache.has(type)) return tailMaterialCache.get(type);
+  const key = `${type}-${isEnemy}`;
+  if (tailMaterialCache.has(key)) return tailMaterialCache.get(key);
 
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
 
-  if (isEnemy) {
-    // Top Gun "MiG-28" / Su-57 Aggressor Black Tail with Red Star
-    ctx.fillStyle = type === 'su33' ? '#1f2630' : '#101318';
+  if (isEnemy || type === 'su57' || type === 'su35') {
+    ctx.fillStyle = type === 'su35' ? '#254a6e' : '#1b222c';
     ctx.fillRect(0, 0, 256, 256);
     ctx.fillStyle = '#d91b24';
-    ctx.fillRect(0, 24, 256, 12);
-    drawStar(ctx, 128, 128, 5, 46, 19, '#e61919', '#ffffff');
+    ctx.fillRect(0, 24, 256, 14);
+    drawStar(ctx, 128, 122, 5, 44, 18, '#e61919', '#ffffff');
+    ctx.fillStyle = '#eef4fa';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(type === 'su35' ? 'FLANKER' : type === 'su57' ? 'FELON' : 'MIG-28', 128, 206);
   } else if (type === 'f18') {
-    // Top Gun: Maverick F/A-18E Tail: Charcoal black with dual electric-blue stripes & gold TOPGUN star
     ctx.fillStyle = '#141920';
     ctx.fillRect(0, 0, 256, 256);
     ctx.fillStyle = '#1da1f2';
@@ -255,7 +454,6 @@ function getTailFinMaterial(type, isEnemy) {
     ctx.textAlign = 'center';
     ctx.fillText('TOPGUN', 128, 206);
   } else if (type === 'f14') {
-    // Iconic Tomcat Black Tail with Gold/White Chevron & VF-1 / Jolly Rogers tribute
     ctx.fillStyle = '#14181f';
     ctx.fillRect(0, 0, 256, 256);
     ctx.fillStyle = '#f5b82e';
@@ -267,8 +465,51 @@ function getTailFinMaterial(type, isEnemy) {
     ctx.font = 'bold 26px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('VF-1', 128, 208);
+  } else if (type === 'f22') {
+    ctx.fillStyle = '#38414d';
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(0, 28, 256, 14);
+    drawStar(ctx, 128, 126, 5, 34, 14, '#cbd5e1', '#1e293b');
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('FF 1FW', 128, 206);
+  } else if (type === 'f15ex') {
+    ctx.fillStyle = '#2d3744';
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(0, 26, 256, 16);
+    drawStar(ctx, 128, 126, 5, 36, 15, '#f59e0b', '#ffffff');
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('EAGLE II', 128, 206);
+  } else if (type === 'typhoon') {
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(0, 0, 256, 256);
+    // RAF Red-White-Blue Fin Flash
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(68, 70, 40, 80);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(108, 70, 40, 80);
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fillRect(148, 70, 40, 80);
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 21px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('TYPHOON', 128, 206);
+  } else if (type === 'j20') {
+    ctx.fillStyle = '#1e242d';
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(0, 30, 256, 10);
+    drawStar(ctx, 128, 126, 5, 34, 14, '#d9222b', '#f5b82e');
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('J-20', 128, 206);
   } else {
-    // F-35C Stealth Low-Vis Tail
     ctx.fillStyle = '#262c34';
     ctx.fillRect(0, 0, 256, 256);
     ctx.fillStyle = '#38bdf8';
@@ -283,12 +524,12 @@ function getTailFinMaterial(type, isEnemy) {
     roughness: 0.35,
     metalness: 0.55
   });
-  tailMaterialCache.set(type, mat);
+  tailMaterialCache.set(key, mat);
   return mat;
 }
 
 /**
- * Builds an authentic, high-detail 3D naval jet fighter or bomber mesh with Top Gun liveries.
+ * Builds an authentic, high-detail 3D naval/air-superiority fighter or bomber mesh.
  * Forward direction in local space is -Z.
  */
 export function createJetMesh(type = 'f18') {
@@ -307,11 +548,12 @@ export function createJetMesh(type = 'f18') {
     accentHex = JET_CONFIGS[type].accentColor;
     stripeHex = JET_CONFIGS[type].stripeColor;
     noseHex = JET_CONFIGS[type].noseColor;
-    if (type === 'f35') {
+    if (type === 'f35' || type === 'f22' || type === 'j20') {
       canopyHex = 0xd4a238; // Gold-tinted radar-absorbent stealth canopy
+    } else if (type === 'su57') {
+      canopyHex = 0xff7733;
     }
   } else if (type === 'mig29') {
-    // Top Gun Iconic Jet-Black "MiG-28" Aggressor!
     bodyHex = 0x14181f;
     accentHex = 0xd91b24;
     stripeHex = 0xd91b24;
@@ -319,7 +561,6 @@ export function createJetMesh(type = 'f18') {
     canopyHex = 0xffa630;
     isEnemy = true;
   } else if (type === 'su33') {
-    // Top Gun: Maverick 5th-Gen "Su-57 Felon" Enemy Ace!
     bodyHex = 0x384352;
     accentHex = 0xd9222b;
     stripeHex = 0xd9222b;
@@ -372,44 +613,49 @@ export function createJetMesh(type = 'f18') {
     roughness: 0.22,
     metalness: 0.32
   });
+  const bombOliveMat = new THREE.MeshStandardMaterial({
+    color: 0x3f4d36,
+    roughness: 0.6,
+    metalness: 0.25
+  });
 
   const isBomber = type === 'bomber';
   const isTomcat = type === 'f14';
   const isSingleEngine = type === 'f35';
+  const hasCanards = type === 'typhoon' || type === 'j20';
+  const isDeltaWing = type === 'typhoon' || type === 'j20';
+  const isDiamondWing = type === 'f22' || type === 'su57' || type === 'su33';
   const scaleMul = isBomber ? 1.85 : 1.0;
 
   // ==========================================
-  // 1. LOFTED AERODYNAMIC FUSELAGE, RADOME & PANCAKE DECK
+  // 1. LOFTED AERODYNAMIC FUSELAGE & RADOME
   // ==========================================
-  // Continuous LatheGeometry profile from nose tip (-9.0) to tailcone (+4.8)
   const lathePoints = [
-    new THREE.Vector2(0.01, -9.0), // Radome tip
-    new THREE.Vector2(0.32, -7.8), // Forward radome
-    new THREE.Vector2(0.62, -6.1), // Radome base
-    new THREE.Vector2(0.78, -4.2), // Forward cockpit tub
-    new THREE.Vector2(0.86, -1.8), // Mid cockpit / dorsal spine
-    new THREE.Vector2(0.84, 1.4),  // Aft dorsal spine
-    new THREE.Vector2(0.66, 4.4),  // Tailcone taper
-    new THREE.Vector2(0.35, 4.85)  // Beaver tail tip
+    new THREE.Vector2(0.01, -9.0),
+    new THREE.Vector2(0.32, -7.8),
+    new THREE.Vector2(0.62, -6.1),
+    new THREE.Vector2(0.78, -4.2),
+    new THREE.Vector2(0.86, -1.8),
+    new THREE.Vector2(0.84, 1.4),
+    new THREE.Vector2(0.66, 4.4),
+    new THREE.Vector2(0.35, 4.85)
   ];
   const fuselageGeo = new THREE.LatheGeometry(lathePoints, 20);
   fuselageGeo.rotateX(Math.PI / 2);
-  // Flatten fuselage cross-section into an aerodynamic chined oval
-  fuselageGeo.scale(isTomcat ? 1.32 : 1.15, 0.76, 1.0);
+  const wideBody = isTomcat || type === 'su57' || type === 'su33' || type === 'f22' || type === 'f15ex';
+  fuselageGeo.scale(wideBody ? 1.32 : 1.15, 0.76, type === 'j20' ? 1.08 : 1.0);
   const fuselage = new THREE.Mesh(fuselageGeo, bodyMat);
   fuselage.position.set(0, 0.05, 0);
   fuselage.castShadow = true;
   root.add(fuselage);
 
-  // Dark Radome Nose Cap & Matte Black Anti-Glare Panel ahead of Windscreen
   const radomeCapGeo = new THREE.ConeGeometry(0.56, 3.3, 18);
   radomeCapGeo.rotateX(-Math.PI / 2);
   radomeCapGeo.scale(1.12, 0.78, 1.0);
   const radomeCap = new THREE.Mesh(radomeCapGeo, noseMat);
-  radomeCap.position.set(0, 0.03, -7.45);
+  radomeCap.position.set(0, 0.03, type === 'j20' ? -7.95 : -7.45);
   root.add(radomeCap);
 
-  // Supersonic Pitot Probe & AoA Vanes on Nose
   const pitot = new THREE.Mesh(
     new THREE.CylinderGeometry(0.015, 0.035, 1.25, 8).rotateX(-Math.PI / 2),
     chromeMat
@@ -417,8 +663,12 @@ export function createJetMesh(type = 'f18') {
   pitot.position.set(0, 0.02, -9.5);
   root.add(pitot);
 
-  // Twin Engine Nacelles (Widely spaced on F-14 Tomcat & Su-57; closely spaced on F/A-18E; single on F-35C)
-  const nacelleOffsets = isSingleEngine ? [0] : isTomcat ? [-0.88, 0.88] : [-0.58, 0.58];
+  // Twin or Single Engine Nacelles
+  const nacelleOffsets = isSingleEngine
+    ? [0]
+    : isTomcat || type === 'su57' || type === 'su33' || type === 'su35'
+    ? [-0.88, 0.88]
+    : [-0.58, 0.58];
   for (const nx of nacelleOffsets) {
     const nacRadius = isSingleEngine ? 0.68 : 0.48;
     const nacGeo = new THREE.CylinderGeometry(nacRadius * 0.9, nacRadius, 7.6, 16);
@@ -429,7 +679,15 @@ export function createJetMesh(type = 'f18') {
     root.add(nac);
   }
 
-  // F-14 Wide Pancake Upper Deck & Wing-Glove Fairings
+  // Su-35 / Su-57 Central Tail Sting Boom between twin nozzles
+  if (type === 'su35' || type === 'su57' || type === 'su33') {
+    const stingGeo = new THREE.ConeGeometry(0.28, 2.6, 12).rotateX(Math.PI / 2);
+    const sting = new THREE.Mesh(stingGeo, noseMat);
+    sting.position.set(0, -0.05, 5.4);
+    root.add(sting);
+  }
+
+  // Upper Deck / LERX
   if (isTomcat) {
     const pancakeShape = new THREE.Shape();
     pancakeShape.moveTo(-0.85, -4.2);
@@ -455,7 +713,6 @@ export function createJetMesh(type = 'f18') {
     pancake.castShadow = true;
     root.add(pancake);
   } else {
-    // Curved Leading Edge Root Extensions (LERX) for F/A-18E, F-35C, MiG-28, Su-57
     const lexShape = new THREE.Shape();
     lexShape.moveTo(-0.68, -4.9);
     lexShape.quadraticCurveTo(-1.85, -2.5, -2.25, -0.3);
@@ -479,18 +736,14 @@ export function createJetMesh(type = 'f18') {
     root.add(lex);
   }
 
-  // Supersonic Wedge / Caret Air Intakes with Compressor Face
-  const intakeX = isTomcat ? 1.22 : 1.02;
+  // Air Intakes
+  const intakeX = isTomcat || type === 'f15ex' ? 1.22 : 1.02;
   for (const side of [-1, 1]) {
-    const intakeHousing = new THREE.Mesh(
-      new THREE.BoxGeometry(0.76, 0.66, 4.6),
-      accentMat
-    );
+    const intakeHousing = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.66, 4.6), accentMat);
     intakeHousing.position.set(side * intakeX, -0.22, -0.2);
     intakeHousing.rotation.z = side * (isTomcat ? -0.1 : 0.16);
     root.add(intakeHousing);
 
-    // Angled supersonic splitter ramp lip
     const intakeMouth = new THREE.Mesh(
       new THREE.PlaneGeometry(0.68, 0.58),
       new THREE.MeshBasicMaterial({ color: 0x070a0f })
@@ -501,17 +754,16 @@ export function createJetMesh(type = 'f18') {
   }
 
   // ==========================================
-  // 2. COCKPIT TUB, PILOTS (MAVERICK + GOOSE/ROOSTER ON F-14!) & BUBBLE CANOPY
+  // 2. COCKPIT TUB, PILOTS & BUBBLE CANOPY
   // ==========================================
-  const crewPositionsZ = isTomcat ? [-2.75, -1.15] : [-2.35];
+  const isTwoSeat = isTomcat || type === 'f15ex';
+  const crewPositionsZ = isTwoSeat ? [-2.75, -1.15] : [-2.35];
   crewPositionsZ.forEach((cz, idx) => {
-    // Martin-Baker Ejection Seat with yellow pull handle
     const seatBack = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.66, 0.22), darkMetalMat);
     seatBack.position.set(0, 0.46, cz + 0.34);
     seatBack.rotation.x = -0.15;
     root.add(seatBack);
 
-    // Pilot / RIO Flight Helmet (Maverick in front, Goose/Rooster in back!)
     const helmetMat = new THREE.MeshStandardMaterial({
       color: idx === 0 ? 0x1c2838 : 0xe8f0f8,
       roughness: 0.18,
@@ -521,7 +773,6 @@ export function createJetMesh(type = 'f18') {
     helmet.position.set(0, 0.59, cz);
     root.add(helmet);
 
-    // Dark Reflective Flight Visor
     const visor = new THREE.Mesh(
       new THREE.SphereGeometry(0.216, 10, 10, 0, Math.PI, 0, Math.PI * 0.55),
       new THREE.MeshBasicMaterial({ color: 0x0b0f14 })
@@ -531,7 +782,6 @@ export function createJetMesh(type = 'f18') {
     root.add(visor);
   });
 
-  // Glowing Green Avionics HUD Combiner Glass in Front Cockpit
   const hudComb = new THREE.Mesh(
     new THREE.PlaneGeometry(0.36, 0.28),
     new THREE.MeshBasicMaterial({
@@ -541,19 +791,17 @@ export function createJetMesh(type = 'f18') {
       side: THREE.DoubleSide
     })
   );
-  hudComb.position.set(0, 0.57, isTomcat ? -3.55 : -3.18);
+  hudComb.position.set(0, 0.57, isTwoSeat ? -3.55 : -3.18);
   hudComb.rotation.x = -0.45;
   root.add(hudComb);
 
-  // Teardrop Bubble Canopy (Elongated on 2-Seat F-14 Tomcat!)
   const canopyGeo = new THREE.SphereGeometry(0.58, 20, 14);
-  canopyGeo.scale(0.96, 0.78, isTomcat ? 4.35 : 3.4);
+  canopyGeo.scale(0.96, 0.78, isTwoSeat ? 4.35 : 3.4);
   const canopy = new THREE.Mesh(canopyGeo, canopyMat);
-  canopy.position.set(0, 0.49, isTomcat ? -2.05 : -2.35);
+  canopy.position.set(0, 0.49, isTwoSeat ? -2.05 : -2.35);
   root.add(canopy);
 
-  // Canopy Frame Bow Arches
-  const archPositionsZ = isTomcat ? [-3.4, -1.95] : [-3.1];
+  const archPositionsZ = isTwoSeat ? [-3.4, -1.95] : [-3.1];
   for (const az of archPositionsZ) {
     const archGeo = new THREE.TorusGeometry(0.54, 0.04, 8, 16, Math.PI);
     const arch = new THREE.Mesh(archGeo, darkMetalMat);
@@ -563,7 +811,38 @@ export function createJetMesh(type = 'f18') {
   }
 
   // ==========================================
-  // 3. SWEPT AIRFOIL WINGS, NAVIGATION LIGHTS & ORDNANCE
+  // 2B. ANIMATED FORWARD CANARD FOREPLANES (TYPHOON & J-20)
+  // ==========================================
+  let leftCanardPivot = null;
+  let rightCanardPivot = null;
+  if (hasCanards) {
+    leftCanardPivot = new THREE.Group();
+    leftCanardPivot.position.set(-0.92, 0.15, -3.65);
+    root.add(leftCanardPivot);
+
+    rightCanardPivot = new THREE.Group();
+    rightCanardPivot.position.set(0.92, 0.15, -3.65);
+    root.add(rightCanardPivot);
+
+    const canardShape = new THREE.Shape();
+    canardShape.moveTo(0, -0.55);
+    canardShape.lineTo(1.65, 0.25);
+    canardShape.lineTo(1.65, 0.72);
+    canardShape.lineTo(0, 0.85);
+    canardShape.closePath();
+
+    const canardGeoR = new THREE.ExtrudeGeometry(canardShape, { depth: 0.06, bevelEnabled: false });
+    canardGeoR.rotateX(Math.PI / 2);
+    const rCanard = new THREE.Mesh(canardGeoR, bodyMat);
+    rightCanardPivot.add(rCanard);
+
+    const lCanard = rCanard.clone();
+    lCanard.scale.x = -1;
+    leftCanardPivot.add(lCanard);
+  }
+
+  // ==========================================
+  // 3. WINGS, NAVIGATION LIGHTS, MISSILES & GUIDED BOMBS
   // ==========================================
   let leftWingPivot = null;
   let rightWingPivot = null;
@@ -585,18 +864,30 @@ export function createJetMesh(type = 'f18') {
       darkMetalMat
     );
     mFins.position.z = 0.88 * scale;
-    const mForwardFins = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28 * scale, 0.28 * scale, 0.2 * scale),
-      darkMetalMat
-    );
-    mForwardFins.position.z = -0.85 * scale;
-    mGrp.add(mBody, mNose, mFins, mForwardFins);
+    mGrp.add(mBody, mNose, mFins);
     mGrp.position.set(x, y, z);
     return mGrp;
   }
 
+  function buildGuidedBomb(x, y, z) {
+    const bGrp = new THREE.Group();
+    const bBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.14, 0.14, 1.9, 10).rotateX(Math.PI / 2),
+      bombOliveMat
+    );
+    const bNose = new THREE.Mesh(
+      new THREE.ConeGeometry(0.14, 0.45, 10).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xf5b82e }) // Yellow live-ordnance stripe
+    );
+    bNose.position.z = -1.15;
+    const bFins = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.46, 0.35), darkMetalMat);
+    bFins.position.z = 0.8;
+    bGrp.add(bBody, bNose, bFins);
+    bGrp.position.set(x, y, z);
+    return bGrp;
+  }
+
   if (isTomcat) {
-    // Variable-Sweep Tomcat Wings with Pivot Hinges inside Wing Gloves
     leftWingPivot = new THREE.Group();
     leftWingPivot.position.set(-1.35, 0.16, -0.45);
     root.add(leftWingPivot);
@@ -620,7 +911,6 @@ export function createJetMesh(type = 'f18') {
     leftWingMesh.castShadow = true;
     leftWingPivot.add(leftWingMesh);
 
-    // Port Red Navigation Light on Tomcat Wingtip
     const portLight = new THREE.Mesh(
       new THREE.SphereGeometry(0.11, 8, 8),
       new THREE.MeshBasicMaterial({ color: 0xff2222 })
@@ -651,7 +941,6 @@ export function createJetMesh(type = 'f18') {
     rightWingMesh.castShadow = true;
     rightWingPivot.add(rightWingMesh);
 
-    // Starboard Green Navigation Light on Tomcat Wingtip
     const stbdLight = new THREE.Mesh(
       new THREE.SphereGeometry(0.11, 8, 8),
       new THREE.MeshBasicMaterial({ color: 0x22ff55 })
@@ -659,30 +948,53 @@ export function createJetMesh(type = 'f18') {
     stbdLight.position.set(6.65, 0.06, 0.65);
     rightWingPivot.add(stbdLight);
 
-    // Heavy AIM-54 Phoenix Belly Missiles + Glove AIM-9 Sidewinders
     for (const mx of [-1.85, 1.85]) {
       const m = buildOrdnanceMissile(mx, -0.32, 0.1, 1.0);
       root.add(m);
       externalMissiles.push(m);
     }
     for (const mx of [-0.55, 0.55]) {
-      const phoenix = buildOrdnanceMissile(mx, -0.42, -0.4, 1.28);
-      root.add(phoenix);
-      externalMissiles.push(phoenix);
+      const bmb = buildGuidedBomb(mx, -0.44, -0.2);
+      root.add(bmb);
     }
   } else {
-    const wingSpan = type === 'f35' ? 12.8 : 12.2;
+    const wingSpan = type === 'f15ex' || type === 'su35' ? 13.2 : isDiamondWing ? 12.8 : 12.2;
     const halfSpan = wingSpan * 0.5;
     const wingShape = new THREE.Shape();
-    wingShape.moveTo(-1.1, -1.85);
-    wingShape.lineTo(-halfSpan, 1.25);
-    wingShape.lineTo(-halfSpan, 2.55);
-    wingShape.lineTo(-1.1, 2.9);
-    wingShape.lineTo(1.1, 2.9);
-    wingShape.lineTo(halfSpan, 2.55);
-    wingShape.lineTo(halfSpan, 1.25);
-    wingShape.lineTo(1.1, -1.85);
-    wingShape.closePath();
+
+    if (isDeltaWing) {
+      // Pure Delta Wing (Eurofighter Typhoon & Chengdu J-20)
+      wingShape.moveTo(-1.05, -2.25);
+      wingShape.lineTo(-halfSpan, 2.35);
+      wingShape.lineTo(-halfSpan, 3.35);
+      wingShape.lineTo(-1.05, 3.6);
+      wingShape.lineTo(1.05, 3.6);
+      wingShape.lineTo(halfSpan, 3.35);
+      wingShape.lineTo(halfSpan, 2.35);
+      wingShape.lineTo(1.05, -2.25);
+      wingShape.closePath();
+    } else if (isDiamondWing) {
+      // Diamond Clipped Delta Wing (F-22A Raptor & Su-57 Felon)
+      wingShape.moveTo(-1.15, -2.1);
+      wingShape.lineTo(-halfSpan, 0.85);
+      wingShape.lineTo(-halfSpan * 0.94, 2.25);
+      wingShape.lineTo(-1.15, 3.15);
+      wingShape.lineTo(1.15, 3.15);
+      wingShape.lineTo(halfSpan * 0.94, 2.25);
+      wingShape.lineTo(halfSpan, 0.85);
+      wingShape.lineTo(1.15, -2.1);
+      wingShape.closePath();
+    } else {
+      wingShape.moveTo(-1.1, -1.85);
+      wingShape.lineTo(-halfSpan, 1.25);
+      wingShape.lineTo(-halfSpan, 2.55);
+      wingShape.lineTo(-1.1, 2.9);
+      wingShape.lineTo(1.1, 2.9);
+      wingShape.lineTo(halfSpan, 2.55);
+      wingShape.lineTo(halfSpan, 1.25);
+      wingShape.lineTo(1.1, -1.85);
+      wingShape.closePath();
+    }
 
     const wingGeo = new THREE.ExtrudeGeometry(wingShape, {
       depth: 0.12,
@@ -693,11 +1005,10 @@ export function createJetMesh(type = 'f18') {
     });
     wingGeo.rotateX(Math.PI / 2);
     const wings = new THREE.Mesh(wingGeo, bodyMat);
-    wings.position.set(0, 0.12, 0.2);
+    wings.position.set(0, type === 'f15ex' ? 0.24 : 0.12, 0.2);
     wings.castShadow = true;
     root.add(wings);
 
-    // Centerline Drop Tank on F/A-18E (Top Gun: Maverick hero fuel tank!)
     if (type === 'f18') {
       const tankGeo = new THREE.CylinderGeometry(0.24, 0.24, 3.6, 12).rotateX(Math.PI / 2);
       const tank = new THREE.Mesh(tankGeo, bodyMat);
@@ -705,65 +1016,72 @@ export function createJetMesh(type = 'f18') {
       root.add(tank);
     }
 
-    // Wingtip Launch Rails, Nav Lights & Underwing Pylons
     const railGeo = new THREE.BoxGeometry(0.14, 0.2, 2.75);
     for (const side of [-1, 1]) {
       const rail = new THREE.Mesh(railGeo, accentMat);
-      rail.position.set(side * halfSpan, 0.05, 1.9);
+      rail.position.set(side * halfSpan, 0.05, isDeltaWing ? 2.5 : 1.9);
       root.add(rail);
 
       const navLight = new THREE.Mesh(
         new THREE.SphereGeometry(0.11, 8, 8),
         new THREE.MeshBasicMaterial({ color: side < 0 ? 0xff2222 : 0x22ff55 })
       );
-      navLight.position.set(side * (halfSpan + 0.18), 0.08, 1.5);
+      navLight.position.set(side * (halfSpan + 0.18), 0.08, isDeltaWing ? 2.1 : 1.5);
       root.add(navLight);
 
-      const tipMissile = buildOrdnanceMissile(side * (halfSpan + 0.14), 0.05, 1.8);
+      const tipMissile = buildOrdnanceMissile(side * (halfSpan + 0.14), 0.05, isDeltaWing ? 2.4 : 1.8);
       root.add(tipMissile);
       externalMissiles.push(tipMissile);
 
-      for (const px of [2.55, 4.05]) {
-        const pylon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.36, 1.65), accentMat);
-        pylon.position.set(side * px, -0.14, 1.2);
-        root.add(pylon);
+      // Inboard Guided Bomb Pylon + Outboard AIM-120/AIM-9 Pylon
+      const bombPylon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.36, 1.65), accentMat);
+      bombPylon.position.set(side * 2.4, -0.14, 1.1);
+      root.add(bombPylon);
+      root.add(buildGuidedBomb(side * 2.4, -0.36, 1.1));
 
-        const pylonMissile = buildOrdnanceMissile(side * px, -0.34, 1.2);
-        root.add(pylonMissile);
-        externalMissiles.push(pylonMissile);
-      }
+      const mslPylon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.36, 1.65), accentMat);
+      mslPylon.position.set(side * 3.95, -0.14, 1.35);
+      root.add(mslPylon);
+      const pylonMissile = buildOrdnanceMissile(side * 3.95, -0.34, 1.35);
+      root.add(pylonMissile);
+      externalMissiles.push(pylonMissile);
     }
   }
 
   // ==========================================
   // 4. ANIMATED STABILATORS & PAINTED SQUADRON VERTICAL TAILS
   // ==========================================
-  const stabX = isTomcat ? 1.35 : 1.1;
-  const leftStabPivot = new THREE.Group();
-  leftStabPivot.position.set(-stabX, 0.0, 4.15);
-  root.add(leftStabPivot);
+  let leftStabPivot = null;
+  let rightStabPivot = null;
 
-  const rightStabPivot = new THREE.Group();
-  rightStabPivot.position.set(stabX, 0.0, 4.15);
-  root.add(rightStabPivot);
+  // Tail-less delta Eurofighter Typhoon uses trailing-edge elevons + forward canards (no rear stabilators)
+  if (type !== 'typhoon') {
+    const stabX = isTomcat || type === 'su35' || type === 'su57' ? 1.35 : 1.1;
+    leftStabPivot = new THREE.Group();
+    leftStabPivot.position.set(-stabX, 0.0, 4.15);
+    root.add(leftStabPivot);
 
-  const stabShape = new THREE.Shape();
-  stabShape.moveTo(0, -0.85);
-  stabShape.lineTo(2.35, 0.35);
-  stabShape.lineTo(2.35, 1.2);
-  stabShape.lineTo(0, 1.3);
-  stabShape.closePath();
+    rightStabPivot = new THREE.Group();
+    rightStabPivot.position.set(stabX, 0.0, 4.15);
+    root.add(rightStabPivot);
 
-  const stabGeoR = new THREE.ExtrudeGeometry(stabShape, { depth: 0.08, bevelEnabled: false });
-  stabGeoR.rotateX(Math.PI / 2);
-  const rightStabMesh = new THREE.Mesh(stabGeoR, accentMat);
-  rightStabPivot.add(rightStabMesh);
+    const stabShape = new THREE.Shape();
+    stabShape.moveTo(0, -0.85);
+    stabShape.lineTo(2.35, 0.35);
+    stabShape.lineTo(2.35, 1.2);
+    stabShape.lineTo(0, 1.3);
+    stabShape.closePath();
 
-  const leftStabMesh = rightStabMesh.clone();
-  leftStabMesh.scale.x = -1;
-  leftStabPivot.add(leftStabMesh);
+    const stabGeoR = new THREE.ExtrudeGeometry(stabShape, { depth: 0.08, bevelEnabled: false });
+    stabGeoR.rotateX(Math.PI / 2);
+    const rightStabMesh = new THREE.Mesh(stabGeoR, accentMat);
+    rightStabPivot.add(rightStabMesh);
 
-  // Vertical Stabilizers with Top Gun Tail Flash Texture
+    const leftStabMesh = rightStabMesh.clone();
+    leftStabMesh.scale.x = -1;
+    leftStabPivot.add(leftStabMesh);
+  }
+
   const tailShape = new THREE.Shape();
   tailShape.moveTo(0, 0);
   tailShape.lineTo(1.25, 2.25);
@@ -779,7 +1097,6 @@ export function createJetMesh(type = 'f18') {
   });
   tailGeo.rotateY(Math.PI / 2);
 
-  // Compute planar UVs for the vertical tail (flip U on starboard +X face so TOPGUN/VF-1 text is never mirrored!)
   const tPos = tailGeo.attributes.position;
   const tNorm = tailGeo.attributes.normal;
   const tUvs = [];
@@ -793,9 +1110,9 @@ export function createJetMesh(type = 'f18') {
   tailGeo.setAttribute('uv', new THREE.Float32BufferAttribute(tUvs, 2));
 
   let tailStrobeMesh = null;
-  if (isBomber || type === 'mig29') {
+  if (isBomber || type === 'mig29' || type === 'typhoon') {
     const singleTail = new THREE.Mesh(tailGeo, tailMat);
-    singleTail.scale.set(1.15, 1.3, 1.15);
+    singleTail.scale.set(1.15, type === 'typhoon' ? 1.38 : 1.3, 1.15);
     singleTail.position.set(0, 0.22, 2.4);
     root.add(singleTail);
 
@@ -803,18 +1120,22 @@ export function createJetMesh(type = 'f18') {
       new THREE.SphereGeometry(0.12, 8, 8),
       new THREE.MeshBasicMaterial({ color: 0xffffff })
     );
-    tailStrobeMesh.position.set(0, 3.15, 4.2);
+    tailStrobeMesh.position.set(0, 3.25, 4.2);
     root.add(tailStrobeMesh);
   } else {
-    const cantAngle = isTomcat ? 0.07 : 0.32;
-    const tailOffsetX = isTomcat ? 1.18 : 1.02;
+    const isUprightTwin = isTomcat || type === 'f15ex' || type === 'su35';
+    const cantAngle = isUprightTwin ? 0.04 : 0.34;
+    const tailOffsetX = isUprightTwin ? 1.18 : 1.02;
+    const tailScaleY = type === 'f15ex' || type === 'su35' ? 1.18 : 1.0;
 
     const leftTail = new THREE.Mesh(tailGeo, tailMat);
+    leftTail.scale.set(1, tailScaleY, 1);
     leftTail.position.set(-tailOffsetX, 0.18, 2.3);
     leftTail.rotation.z = cantAngle;
     root.add(leftTail);
 
     const rightTail = new THREE.Mesh(tailGeo, tailMat);
+    rightTail.scale.set(1, tailScaleY, 1);
     rightTail.position.set(tailOffsetX, 0.18, 2.3);
     rightTail.rotation.z = -cantAngle;
     root.add(rightTail);
@@ -823,12 +1144,12 @@ export function createJetMesh(type = 'f18') {
       new THREE.SphereGeometry(0.11, 8, 8),
       new THREE.MeshBasicMaterial({ color: 0xffffff })
     );
-    tailStrobeMesh.position.set(-tailOffsetX - 0.15, 2.48, 4.1);
+    tailStrobeMesh.position.set(-tailOffsetX - 0.15, 2.48 * tailScaleY, 4.1);
     root.add(tailStrobeMesh);
   }
 
   // ==========================================
-  // 5. MULTI-PETAL VARIABLE NOZZLES, AFTERBURNERS & SUPERSONIC VAPOR CONE
+  // 5. VARIABLE NOZZLES, AFTERBURNERS & SUPERSONIC VAPOR CONE
   // ==========================================
   const burnerMeshes = [];
   const outerPlumeMat = new THREE.MeshBasicMaterial({
@@ -851,23 +1172,28 @@ export function createJetMesh(type = 'f18') {
     const nozzleGroup = new THREE.Group();
     nozzleGroup.position.set(xOff, -0.12, 4.95);
 
-    const nozzleRing = new THREE.Mesh(
-      new THREE.CylinderGeometry(nozzleRadius * 0.82, nozzleRadius, 1.25, 16, 1, true).rotateX(Math.PI / 2),
-      darkMetalMat
-    );
-    nozzleGroup.add(nozzleRing);
-
-    // 10 Turkey-Feather Nozzle Petals around the perimeter
-    for (let p = 0; p < 10; p++) {
-      const ang = (p / 10) * Math.PI * 2;
-      const petal = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.95), darkMetalMat);
-      petal.position.set(
-        Math.cos(ang) * nozzleRadius * 0.88,
-        Math.sin(ang) * nozzleRadius * 0.88,
-        0.15
+    if (type === 'f22') {
+      // F-22A Raptor Rectangular 2D Thrust-Vectoring Stealth Nozzle Paddles
+      const vecBox = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.56, 1.25), darkMetalMat);
+      nozzleGroup.add(vecBox);
+    } else {
+      const nozzleRing = new THREE.Mesh(
+        new THREE.CylinderGeometry(nozzleRadius * 0.82, nozzleRadius, 1.25, 16, 1, true).rotateX(Math.PI / 2),
+        darkMetalMat
       );
-      petal.rotation.z = ang + Math.PI / 2;
-      nozzleGroup.add(petal);
+      nozzleGroup.add(nozzleRing);
+
+      for (let p = 0; p < 10; p++) {
+        const ang = (p / 10) * Math.PI * 2;
+        const petal = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.95), darkMetalMat);
+        petal.position.set(
+          Math.cos(ang) * nozzleRadius * 0.88,
+          Math.sin(ang) * nozzleRadius * 0.88,
+          0.15
+        );
+        petal.rotation.z = ang + Math.PI / 2;
+        nozzleGroup.add(petal);
+      }
     }
     root.add(nozzleGroup);
 
@@ -893,7 +1219,6 @@ export function createJetMesh(type = 'f18') {
     const innerCone = new THREE.Mesh(innerConeGeo, innerCoreMat.clone());
     plumeGroup.add(innerCone);
 
-    // Glowing Mach Shock Diamonds inside the Afterburner Plume
     for (let d = 1; d <= 4; d++) {
       const diamond = new THREE.Mesh(
         new THREE.OctahedronGeometry(nozzleRadius * (0.38 - d * 0.055), 0),
@@ -908,7 +1233,6 @@ export function createJetMesh(type = 'f18') {
     burnerMeshes.push({ group: plumeGroup, outerMat: outerCone.material, innerMat: innerCone.material });
   }
 
-  // Supersonic Mach 1+ Prandtl-Glauert Vapor Cone (appears above 550 KTS!)
   const vaporConeGeo = new THREE.ConeGeometry(4.2, 4.5, 24, 1, true);
   vaporConeGeo.rotateX(-Math.PI / 2);
   const vaporConeMat = new THREE.MeshBasicMaterial({
@@ -930,7 +1254,6 @@ export function createJetMesh(type = 'f18') {
   const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.22, 16);
   wheelGeo.rotateZ(Math.PI / 2);
 
-  // Nose Oleo Strut + Dual Catapult Launch Bar Tires + Taxi Headlight
   const noseStrut = new THREE.Mesh(strutGeo, chromeMat);
   noseStrut.position.set(0, -0.85, -3.65);
   gearGroup.add(noseStrut);
@@ -958,7 +1281,6 @@ export function createJetMesh(type = 'f18') {
     gearGroup.add(mainWheel);
   }
 
-  // Carrier Arrestor Tailhook Assembly
   const tailhookPivot = new THREE.Group();
   tailhookPivot.position.set(0, -0.35, 3.8);
   const hookBarGeo = new THREE.CylinderGeometry(0.05, 0.05, 2.38, 8);
@@ -983,6 +1305,8 @@ export function createJetMesh(type = 'f18') {
     rightWingPivot,
     leftStabPivot,
     rightStabPivot,
+    leftCanardPivot,
+    rightCanardPivot,
     externalMissiles,
     vaporConeMesh,
     tailStrobeMesh
@@ -992,7 +1316,7 @@ export function createJetMesh(type = 'f18') {
 }
 
 /**
- * Updates F-14 variable-sweep wings, stabilator control surfaces, afterburners,
+ * Updates F-14 variable-sweep wings, canards, stabilator control surfaces, afterburners,
  * supersonic Mach vapor cone, navigation strobe, and landing gear.
  */
 export function updateJetVisuals(jetMesh, speedKts, throttle, gearDown, pitchInput = 0, rollInput = 0) {
@@ -1004,6 +1328,8 @@ export function updateJetVisuals(jetMesh, speedKts, throttle, gearDown, pitchInp
     rightWingPivot,
     leftStabPivot,
     rightStabPivot,
+    leftCanardPivot,
+    rightCanardPivot,
     vaporConeMesh,
     tailStrobeMesh
   } = jetMesh.userData;
@@ -1012,13 +1338,11 @@ export function updateJetVisuals(jetMesh, speedKts, throttle, gearDown, pitchInp
     gearGroup.visible = Boolean(gearDown);
   }
 
-  // Flashing Anti-Collision Strobe Light
   if (tailStrobeMesh) {
     const strobeOn = Math.floor(performance.now() * 0.008) % 6 === 0;
     tailStrobeMesh.visible = strobeOn;
   }
 
-  // F-14 Tomcat Swing-Wing sweep angle based on airspeed
   if (leftWingPivot && rightWingPivot) {
     const sweepFactor = gearDown
       ? 0
@@ -1028,13 +1352,16 @@ export function updateJetVisuals(jetMesh, speedKts, throttle, gearDown, pitchInp
     rightWingPivot.rotation.y = -sweepRad;
   }
 
-  // Differential Stabilator deflection for Pitch + Roll
   if (leftStabPivot && rightStabPivot) {
     leftStabPivot.rotation.x = THREE.MathUtils.clamp(pitchInput * 0.36 - rollInput * 0.24, -0.45, 0.45);
     rightStabPivot.rotation.x = THREE.MathUtils.clamp(pitchInput * 0.36 + rollInput * 0.24, -0.45, 0.45);
   }
 
-  // Supersonic Prandtl-Glauert Mach Vapor Cone (visible around 560 - 650 KTS)
+  if (leftCanardPivot && rightCanardPivot) {
+    leftCanardPivot.rotation.x = THREE.MathUtils.clamp(-pitchInput * 0.38 + rollInput * 0.2, -0.45, 0.45);
+    rightCanardPivot.rotation.x = THREE.MathUtils.clamp(-pitchInput * 0.38 - rollInput * 0.2, -0.45, 0.45);
+  }
+
   if (vaporConeMesh) {
     if (speedKts > 545 && !gearDown) {
       const machIntensity = Math.min(1, (speedKts - 545) / 80);
@@ -1047,7 +1374,6 @@ export function updateJetVisuals(jetMesh, speedKts, throttle, gearDown, pitchInp
     }
   }
 
-  // Afterburner plume scaling & Mach shock diamonds (hidden when parked / idle throttle)
   if (burnerMeshes) {
     const isParked = throttle <= 0.05;
     const isAfterburner = throttle > 0.85;
@@ -1069,6 +1395,141 @@ export function updateJetVisuals(jetMesh, speedKts, throttle, gearDown, pitchInp
 }
 
 /**
+ * Builds 3D Air-to-Ground Strike Targets (Bunkers, Radar Domes, SAM Sites, Fuel Depots, Enemy Destroyers, and Sky Rings).
+ */
+export function createStrikeTargetMesh(targetType = 'bunker') {
+  const grp = new THREE.Group();
+
+  const concreteMat = new THREE.MeshStandardMaterial({
+    color: 0x5c646d,
+    emissive: 0x14181d,
+    roughness: 0.75
+  });
+  const darkSteelMat = new THREE.MeshStandardMaterial({
+    color: 0x2c3540,
+    emissive: 0x0c1015,
+    roughness: 0.45,
+    metalness: 0.55
+  });
+  const hazardRedMat = new THREE.MeshStandardMaterial({
+    color: 0xd92626,
+    emissive: 0x3a0808,
+    roughness: 0.4
+  });
+
+  if (targetType === 'bunker') {
+    // Hardened Mountain Uranium Bunker with Glowing Target Ventilation Hatch
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(22, 28, 12, 12), concreteMat);
+    base.position.y = 6;
+    grp.add(base);
+
+    const blastRim = new THREE.Mesh(
+      new THREE.TorusGeometry(11.5, 2.2, 10, 24).rotateX(Math.PI / 2),
+      darkSteelMat
+    );
+    blastRim.position.y = 12.2;
+    grp.add(blastRim);
+
+    const ventGlow = new THREE.Mesh(
+      new THREE.CircleGeometry(9.5, 24).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xff4422 })
+    );
+    ventGlow.position.y = 12.35;
+    grp.add(ventGlow);
+
+    const targetRing = new THREE.Mesh(
+      new THREE.RingGeometry(13.5, 16.0, 24).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xf5b82e, side: THREE.DoubleSide })
+    );
+    targetRing.position.y = 12.5;
+    grp.add(targetRing);
+  } else if (targetType === 'radar') {
+    // Early-Warning Geodesic Radar Dome & Tower
+    const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(7, 9.5, 18, 10), concreteMat);
+    pedestal.position.y = 9;
+    grp.add(pedestal);
+
+    const dome = new THREE.Mesh(
+      new THREE.SphereGeometry(11.5, 16, 12),
+      new THREE.MeshStandardMaterial({ color: 0xeef4fa, emissive: 0x1e293b, roughness: 0.3 })
+    );
+    dome.position.y = 24;
+    grp.add(dome);
+
+    const beacon = new THREE.Mesh(
+      new THREE.SphereGeometry(1.4, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xff2222 })
+    );
+    beacon.position.y = 36.5;
+    grp.add(beacon);
+  } else if (targetType === 'sam') {
+    // S-400 Surface-to-Air Missile Battery & TEL Launcher
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(16, 18, 3, 12), concreteMat);
+    pad.position.y = 1.5;
+    grp.add(pad);
+
+    const truck = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 18), darkSteelMat);
+    truck.position.y = 5.5;
+    grp.add(truck);
+
+    for (const xOff of [-2.4, -0.8, 0.8, 2.4]) {
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 14, 10), hazardRedMat);
+      tube.position.set(xOff, 12, 1);
+      tube.rotation.x = -0.55;
+      grp.add(tube);
+    }
+  } else if (targetType === 'depot') {
+    // Fuel & Munitions Storage Complex
+    for (const xOff of [-14, 0, 14]) {
+      const tank = new THREE.Mesh(new THREE.CylinderGeometry(5.8, 5.8, 14, 14), concreteMat);
+      tank.position.set(xOff, 7, 0);
+      grp.add(tank);
+
+      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(5.9, 5.9, 2.8, 14), hazardRedMat);
+      stripe.position.set(xOff, 10, 0);
+      grp.add(stripe);
+    }
+  } else if (targetType === 'destroyer') {
+    // Enemy Guided-Missile Warship / Battlecruiser (145m long)
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(20, 11, 145), darkSteelMat);
+    hull.position.y = 5.5;
+    grp.add(hull);
+
+    const redDeck = new THREE.Mesh(new THREE.BoxGeometry(19.2, 1.0, 140), hazardRedMat);
+    redDeck.position.y = 11.2;
+    grp.add(redDeck);
+
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(14, 16, 38), concreteMat);
+    bridge.position.set(0, 19, -8);
+    grp.add(bridge);
+
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 2.5, 18, 8), darkSteelMat);
+    mast.position.set(0, 34, -10);
+    grp.add(mast);
+
+    const wake = new THREE.Mesh(
+      new THREE.PlaneGeometry(26, 210).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xdff6ff, transparent: true, opacity: 0.3 })
+    );
+    wake.position.set(0, 0.4, 140);
+    grp.add(wake);
+  } else if (targetType === 'skyring') {
+    // Glowing Holographic Canyon Time-Trial Gate Ring
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(28, 1.6, 12, 32),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+    );
+    const innerRing = new THREE.Mesh(
+      new THREE.TorusGeometry(25, 0.7, 8, 32),
+      new THREE.MeshBasicMaterial({ color: 0xf5b82e })
+    );
+    grp.add(ring, innerRing);
+  }
+
+  return grp;
+}
+
+/**
  * Builds a 3D first-person fighter cockpit glareshield, canopy bow, and dual MFD screens
  * for COCKPIT camera mode.
  */
@@ -1082,12 +1543,10 @@ export function createCockpitInteriorGroup() {
     emissive: 0x090d12
   });
 
-  // Curved Glareshield Coaming below HUD
   const coaming = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.28, 0.85), frameMat);
   coaming.position.set(0, -0.52, -1.25);
   cockpit.add(coaming);
 
-  // Dual Glowing Green Avionics MFD Screens (Left Radar / Right Stores)
   const mfdBezelGeo = new THREE.BoxGeometry(0.36, 0.32, 0.06);
   const mfdScreenGeo = new THREE.PlaneGeometry(0.3, 0.26);
   const mfdScreenMat = new THREE.MeshBasicMaterial({ color: 0x16442e });
@@ -1104,7 +1563,6 @@ export function createCockpitInteriorGroup() {
     cockpit.add(scr);
   }
 
-  // HUD Combiner Frame Uprights & Glass
   for (const side of [-0.24, 0.24]) {
     const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.42, 8), frameMat);
     strut.position.set(side, -0.22, -1.18);
@@ -1112,7 +1570,6 @@ export function createCockpitInteriorGroup() {
     cockpit.add(strut);
   }
 
-  // Forward Canopy Bow Arch & Side Rails
   const bowArch = new THREE.Mesh(
     new THREE.TorusGeometry(0.84, 0.032, 10, 24, Math.PI),
     frameMat
@@ -1139,17 +1596,14 @@ function createCarrierDeckTexture() {
   canvas.height = 2048;
   const ctx = canvas.getContext('2d');
 
-  // 1. Non-skid dark flight deck asphalt base
   ctx.fillStyle = '#242930';
   ctx.fillRect(0, 0, 1024, 2048);
 
-  // Subtle asphalt grain & tire rubber marks in the landing zone
   for (let i = 0; i < 3200; i++) {
     ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.05)';
     ctx.fillRect(Math.random() * 1024, Math.random() * 2048, 4, 8);
   }
 
-  // Dark tire touchdown skid marks around the arrestor wire zone
   ctx.fillStyle = 'rgba(10, 12, 15, 0.42)';
   for (let i = 0; i < 95; i++) {
     const sx = 430 + (Math.random() - 0.5) * 160;
@@ -1157,28 +1611,23 @@ function createCarrierDeckTexture() {
     ctx.fillRect(sx, sy, 6, 65 + Math.random() * 90);
   }
 
-  // 2. Yellow Deck-Edge Perimeter Safety Stripes
   ctx.fillStyle = '#f5b82e';
   ctx.fillRect(18, 0, 14, 2048);
   ctx.fillRect(992, 0, 14, 2048);
 
-  // 3. Landing Runway Foul Lines
   ctx.fillStyle = '#f5b82e';
   ctx.fillRect(256, 180, 12, 1820);
   ctx.fillRect(756, 180, 12, 1820);
 
-  // White Solid & Dashed Runway Centerline
   ctx.fillStyle = '#eef3f8';
   for (let y = 220; y < 1940; y += 90) {
     ctx.fillRect(502, y, 20, 52);
   }
 
-  // Stern Ramp Threshold Zebra Stripes & Meatball Aimpoint Bar
   for (let x = 285; x <= 715; x += 48) {
     ctx.fillRect(x, 1945, 28, 68);
   }
 
-  // Steam Catapult Tracks on Bow + Jet Blast Deflector (JBD) markings
   ctx.strokeStyle = '#6c7a89';
   ctx.lineWidth = 6;
   ctx.beginPath();
@@ -1188,7 +1637,6 @@ function createCarrierDeckTexture() {
   ctx.lineTo(640, 740);
   ctx.stroke();
 
-  // Giant "68" Hull Number on the Bow & Stern
   ctx.fillStyle = '#eef3f8';
   ctx.font = 'bold 145px sans-serif';
   ctx.textAlign = 'center';
@@ -1209,7 +1657,6 @@ export function createCarrierGroup() {
   const carrier = new THREE.Group();
   const DECK_Y = 20.0;
 
-  // Authentic US Navy Haze Grey with subtle ambient fill so backlit faces never turn pitch-black
   const hullMat = new THREE.MeshStandardMaterial({
     color: 0x627284,
     emissive: 0x18222e,
@@ -1229,7 +1676,6 @@ export function createCarrierGroup() {
   });
   const wireMat = new THREE.MeshBasicMaterial({ color: 0xd8e2ec });
 
-  // Lower Waterline Red Anti-Fouling Boot Stripe + Grey Hull
   const bootGeo = new THREE.BoxGeometry(45, 3.2, 314);
   const boot = new THREE.Mesh(
     bootGeo,
@@ -1244,28 +1690,18 @@ export function createCarrierGroup() {
   hull.castShadow = true;
   carrier.add(hull);
 
-  // Under-deck Hangar Sponsons
   const sponsonGeo = new THREE.BoxGeometry(68, 5.5, 260);
   const sponson = new THREE.Mesh(sponsonGeo, hullMat);
   sponson.position.set(0, 16.2, 10);
   carrier.add(sponson);
 
-  // Main Flight Deck Surface (top face at Y = 20.0)
   const deckGeo = new THREE.BoxGeometry(74, 2.0, 340);
-  const deckMaterials = [
-    hullMat,
-    hullMat,
-    deckMat,
-    hullMat,
-    hullMat,
-    hullMat
-  ];
+  const deckMaterials = [hullMat, hullMat, deckMat, hullMat, hullMat, hullMat];
   const deck = new THREE.Mesh(deckGeo, deckMaterials);
   deck.position.set(0, DECK_Y - 1.0, 0);
   deck.receiveShadow = true;
   carrier.add(deck);
 
-  // 4 Arrestor Wires across the landing zone
   const wirePositionsZ = [115, 95, 75, 55];
   const wireMeshes = [];
   wirePositionsZ.forEach((zPos, idx) => {
@@ -1281,7 +1717,6 @@ export function createCarrierGroup() {
     wireMeshes.push({ number: idx + 1, z: zPos, mesh: wMesh });
   });
 
-  // Optical Landing System ("Meatball" IFLOLS Light Array on Port Side at z = 65)
   const olsGroup = new THREE.Group();
   olsGroup.position.set(-22, DECK_Y + 2.5, 65);
   const olsFrame = new THREE.Mesh(
@@ -1307,7 +1742,6 @@ export function createCarrierGroup() {
   olsGroup.add(meatballLight3D);
   carrier.add(olsGroup);
 
-  // Starboard Island Superstructure ("The Tower" — Buzz it at >350 KTS for a Top Gun Flyby!)
   const islandGroup = new THREE.Group();
   islandGroup.position.set(27, DECK_Y, -18);
 
@@ -1316,7 +1750,6 @@ export function createCarrierGroup() {
   islandBase.castShadow = true;
   islandGroup.add(islandBase);
 
-  // Structural catwalks & levels on the Island Tower for 3D depth
   const catwalkLower = new THREE.Mesh(new THREE.BoxGeometry(13.4, 1.2, 48), islandTrimMat);
   catwalkLower.position.set(0, 17.8, 0);
   islandGroup.add(catwalkLower);
@@ -1325,7 +1758,6 @@ export function createCarrierGroup() {
   bridgeTower.position.set(0, 22.5, -6);
   islandGroup.add(bridgeTower);
 
-  // Illuminated "68" Hull Number Signboard on Island Superstructure
   const numCanvas = document.createElement('canvas');
   numCanvas.width = 256;
   numCanvas.height = 128;
@@ -1351,7 +1783,6 @@ export function createCarrierGroup() {
   aftSign.position.set(0, 12.0, 23.12);
   islandGroup.add(aftSign);
 
-  // Glowing Bridge & Pri-Fly Air Boss Windows (wrap around port, forward, and aft faces)
   const bridgeGlass = new THREE.Mesh(
     new THREE.BoxGeometry(11.1, 2.3, 18),
     new THREE.MeshBasicMaterial({ color: 0x70e4ff })
@@ -1366,7 +1797,6 @@ export function createCarrierGroup() {
   priFlyGlass.position.set(-0.3, 20.5, 2);
   islandGroup.add(priFlyGlass);
 
-  // Communications Mast & Yardarms
   const mastPole = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.9, 18, 8), islandTrimMat);
   mastPole.position.set(0, 34, 2);
   islandGroup.add(mastPole);
@@ -1375,7 +1805,6 @@ export function createCarrierGroup() {
   yardarm.position.set(0, 39, 2);
   islandGroup.add(yardarm);
 
-  // Rotating Radar Dish on Mast
   const radarSpinner = new THREE.Group();
   radarSpinner.position.set(0, 31, -5);
   const radarDish = new THREE.Mesh(
@@ -1387,11 +1816,10 @@ export function createCarrierGroup() {
 
   carrier.add(islandGroup);
 
-  // Parked Squadron Aircraft on Starboard Bow & Apron
   const parkedCoords = [
     { x: 24, z: -95, yaw: 0.45, type: 'f18' },
     { x: 24, z: -62, yaw: 0.45, type: 'f14' },
-    { x: 25, z: 28, yaw: 0.52, type: 'f35' }
+    { x: 25, z: 28, yaw: 0.52, type: 'f22' }
   ];
   for (const pk of parkedCoords) {
     const parkedJet = createJetMesh(pk.type);
@@ -1401,7 +1829,6 @@ export function createCarrierGroup() {
     carrier.add(parkedJet);
   }
 
-  // Deck Edge Approach Lights
   const deckLightsGroup = new THREE.Group();
   const lightBulbGeo = new THREE.SphereGeometry(0.42, 6, 6);
   const greenLightMat = new THREE.MeshBasicMaterial({ color: 0x24f07d });
@@ -1424,7 +1851,6 @@ export function createCarrierGroup() {
   }
   carrier.add(deckLightsGroup);
 
-  // Churning Stern Wake
   const wakeGeo = new THREE.PlaneGeometry(54, 460);
   wakeGeo.rotateX(-Math.PI / 2);
   const wakeMat = new THREE.MeshBasicMaterial({
@@ -1442,6 +1868,7 @@ export function createCarrierGroup() {
     wireMeshes,
     radarSpinner,
     meatballLight3D,
+    olsGroup,
     islandWorldOffset: new THREE.Vector3(27, DECK_Y + 24, -24)
   };
 
