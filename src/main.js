@@ -1,7 +1,14 @@
 import * as THREE from 'three';
 import { SoundSystem } from './audio.js';
-import { JET_CONFIGS, createJetMesh, updateJetVisuals, createCarrierGroup, createCockpitInteriorGroup } from './jets.js';
-import { createRealisticEnvironment } from './environment.js';
+import {
+  JET_CONFIGS,
+  createJetMesh,
+  updateJetVisuals,
+  createCarrierGroup,
+  createCockpitInteriorGroup,
+  createStrikeTargetMesh
+} from './jets.js';
+import { createRealisticEnvironment, ISLAND_DEFINITIONS, evaluateIslandCoastMultiplier } from './environment.js';
 
 // ==========================================
 // STORAGE & INPUT SANITIZATION (SECURE CODING)
@@ -23,7 +30,9 @@ function loadSaveData() {
     selectedJet: 'f18',
     bestWave: 1,
     bestScore: 0,
-    stageGrades: {}
+    stageGrades: {},
+    strikeGrades: {},
+    specopsGrades: {}
   };
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -34,7 +43,9 @@ function loadSaveData() {
       selectedJet: JET_CONFIGS[parsed.selectedJet] ? parsed.selectedJet : 'f18',
       bestWave: Math.max(1, Number(parsed.bestWave) || 1),
       bestScore: Math.max(0, Number(parsed.bestScore) || 0),
-      stageGrades: typeof parsed.stageGrades === 'object' && parsed.stageGrades ? parsed.stageGrades : {}
+      stageGrades: typeof parsed.stageGrades === 'object' && parsed.stageGrades ? parsed.stageGrades : {},
+      strikeGrades: typeof parsed.strikeGrades === 'object' && parsed.strikeGrades ? parsed.strikeGrades : {},
+      specopsGrades: typeof parsed.specopsGrades === 'object' && parsed.specopsGrades ? parsed.specopsGrades : {}
     };
   } catch {
     return defaults;
@@ -50,7 +61,7 @@ function writeSaveData(data) {
 }
 
 // ==========================================
-// CARRIER CHALLENGE 5-STAGE DEFINITIONS
+// CARRIER CHALLENGE 10-STAGE DEFINITIONS
 // ==========================================
 const CARRIER_STAGES = {
   1: {
@@ -87,8 +98,8 @@ const CARRIER_STAGES = {
     waterColor: 0x002442,
     sunIntensity: 2.3,
     ambientIntensity: 0.85,
-    carrierSpeedMps: 11.5, // ~22 kts forward along -Z
-    windVec: new THREE.Vector3(10.5, 0, 0), // 20+ kt crosswind pushing right
+    carrierSpeedMps: 11.5,
+    windVec: new THREE.Vector3(10.5, 0, 0),
     turbulence: 0.15,
     deckPitchAmp: 0.006,
     overheadBreak: false,
@@ -162,6 +173,121 @@ const CARRIER_STAGES = {
     startYaw: 0,
     startSpeedKts: 144,
     startGearDown: true
+  },
+  6: {
+    id: 6,
+    name: 'STAGE 6: SINGLE-ENGINE FLAMEOUT EMERGENCY',
+    sunElevation: 14,
+    sunAzimuth: 135,
+    turbidity: 6.0,
+    rayleigh: 2.3,
+    fogColor: 0x7ea6c8,
+    fogDensity: 0.00016,
+    waterColor: 0x00223e,
+    sunIntensity: 2.1,
+    ambientIntensity: 0.8,
+    carrierSpeedMps: 9.5,
+    windVec: new THREE.Vector3(5.0, 0, 0),
+    turbulence: 0.22,
+    deckPitchAmp: 0.01,
+    overheadBreak: false,
+    engineFailure: true,
+    startPos: new THREE.Vector3(18, 136, 1780),
+    startYaw: 0,
+    startSpeedKts: 152,
+    startGearDown: true
+  },
+  7: {
+    id: 7,
+    name: 'STAGE 7: "COBRA" HIGH-SPEED SHORT-FIELD TRAP',
+    sunElevation: 26,
+    sunAzimuth: 155,
+    turbidity: 3.2,
+    rayleigh: 1.7,
+    fogColor: 0x8fbce0,
+    fogDensity: 0.00009,
+    waterColor: 0x002d52,
+    sunIntensity: 2.7,
+    ambientIntensity: 0.92,
+    carrierSpeedMps: 11.0,
+    windVec: new THREE.Vector3(0, 0, 0),
+    turbulence: 0.1,
+    deckPitchAmp: 0.005,
+    overheadBreak: false,
+    cobraEntry: true,
+    startPos: new THREE.Vector3(0, 118, 1120),
+    startYaw: 0,
+    startSpeedKts: 275,
+    startGearDown: false
+  },
+  8: {
+    id: 8,
+    name: 'STAGE 8: TYPHOON CYCLONE & GUSTING SQUALL',
+    sunElevation: 3.8,
+    sunAzimuth: 200,
+    turbidity: 11.0,
+    rayleigh: 3.8,
+    fogColor: 0x5c6e82,
+    fogDensity: 0.00038,
+    waterColor: 0x0a1826,
+    sunIntensity: 1.35,
+    ambientIntensity: 0.52,
+    carrierSpeedMps: 12.0,
+    windVec: new THREE.Vector3(-12.5, 0, 5.0),
+    turbulence: 0.85,
+    deckPitchAmp: 0.036,
+    overheadBreak: false,
+    windGusting: true,
+    startPos: new THREE.Vector3(35, 145, 1920),
+    startYaw: 0,
+    startSpeedKts: 150,
+    startGearDown: true
+  },
+  9: {
+    id: 9,
+    name: 'STAGE 9: "BROKEN MEATBALL" LSO TALK-DOWN',
+    sunElevation: 5.5,
+    sunAzimuth: 175,
+    turbidity: 8.5,
+    rayleigh: 2.9,
+    fogColor: 0xc27a52,
+    fogDensity: 0.00024,
+    waterColor: 0x102030,
+    sunIntensity: 1.75,
+    ambientIntensity: 0.62,
+    carrierSpeedMps: 10.0,
+    windVec: new THREE.Vector3(6.5, 0, 0),
+    turbulence: 0.25,
+    deckPitchAmp: 0.014,
+    overheadBreak: false,
+    meatballOut: true,
+    startPos: new THREE.Vector3(-15, 134, 1820),
+    startYaw: 0,
+    startSpeedKts: 142,
+    startGearDown: true
+  },
+  10: {
+    id: 10,
+    name: 'STAGE 10: EVASIVE S-TURNING CARRIER UNDER FIRE',
+    sunElevation: 2.8,
+    sunAzimuth: 188,
+    turbidity: 9.0,
+    rayleigh: 3.2,
+    fogColor: 0xc87248,
+    fogDensity: 0.0002,
+    waterColor: 0x142234,
+    sunIntensity: 1.95,
+    ambientIntensity: 0.68,
+    carrierSpeedMps: 14.0,
+    windVec: new THREE.Vector3(-5.0, 0, 0),
+    turbulence: 0.35,
+    deckPitchAmp: 0.018,
+    overheadBreak: false,
+    carrierTurning: true,
+    startPos: new THREE.Vector3(0, 142, 1950),
+    startYaw: 0,
+    startSpeedKts: 148,
+    startGearDown: true
   }
 };
 
@@ -196,7 +322,6 @@ const camera = new THREE.PerspectiveCamera(
   32000
 );
 
-// Hemisphere + Directional Sun Lighting
 const ambientLight = new THREE.HemisphereLight(0xd8ecff, 0x1a3048, 0.95);
 scene.add(ambientLight);
 
@@ -234,23 +359,18 @@ function setAtmosphere(atmosConfig) {
   ambientLight.intensity = ambientIntensity;
 }
 
-// Initialize Default Atmosphere
 setAtmosphere(CARRIER_STAGES[1]);
 
-// Carrier Instance in Scene
 const carrierGroup = createCarrierGroup();
 scene.add(carrierGroup);
 
-// 3D First-Person Cockpit Glareshield & Canopy Frame
 const cockpitInteriorGroup = createCockpitInteriorGroup();
 cockpitInteriorGroup.visible = false;
 scene.add(cockpitInteriorGroup);
 
-// Sky Glide-Slope Approach Boxes Group (Carrier Mode)
 const glideBoxesGroup = new THREE.Group();
 scene.add(glideBoxesGroup);
 
-// Arrestor Cable Stretch Line (when trapped on deck)
 const trapLineGeo = new THREE.BufferGeometry().setFromPoints([
   new THREE.Vector3(-17, 20.3, 75),
   new THREE.Vector3(0, 20.3, 75),
@@ -266,10 +386,12 @@ carrierGroup.add(trapLineMesh);
 // ==========================================
 const keys = {};
 const game = {
-  state: 'HANGAR', // 'HANGAR' | 'COMBAT' | 'CARRIER' | 'DEBRIEF'
+  state: 'HANGAR', // 'HANGAR' | 'COMBAT' | 'CARRIER' | 'STRIKE' | 'SPECOPS' | 'DEBRIEF'
   cameraMode: 'CHASE', // 'CHASE' | 'COCKPIT' | 'LSO'
   showGlideBoxes: true,
   carrierStage: 1,
+  strikeMission: 1,
+  specopsMission: 1,
   wave: 1,
   score: 0,
   kills: 0,
@@ -278,6 +400,12 @@ const game = {
   lastTowerBuzzTime: 0,
   cameraShake: 0,
   breakPassedBow: false,
+  missionStartTime: 0,
+  missionPhase: 1,
+  radarCeilingTimer: 0,
+  carrierHp: 100,
+  ringIndex: 0,
+  totalRings: 16,
 
   player: {
     mesh: null,
@@ -293,9 +421,11 @@ const game = {
     hull: 100,
     gearDown: true,
     missiles: 8,
+    bombs: 6,
     flares: 12,
     gunCooldown: 0,
     missileCooldown: 0,
+    bombCooldown: 0,
     flareCooldown: 0,
     gLoad: 1.0,
     aoaDeg: 3.5,
@@ -303,18 +433,20 @@ const game = {
     trappedWire: null,
     trapProgress: 0,
     lockedTarget: null,
-    lockProgress: 0,
-    seekingTarget: null
+    lockProgress: 0
   },
 
+  wingman: null,
   enemies: [],
+  groundTargets: [],
+  skyRings: [],
   bullets: [],
   missiles: [],
+  bombs: [],
   flares: [],
   particles: []
 };
 
-// Build Initial Player Jet Mesh
 function rebuildPlayerJetMesh(jetId) {
   if (game.player.mesh) {
     scene.remove(game.player.mesh);
@@ -340,8 +472,6 @@ function rebuildGlideSlopeBoxes(overheadBreak = false) {
     opacity: 0.68
   });
 
-  // Target touchdown on carrier is (0, 20.0, 75) in carrier-local coordinates
-  // Standard 3.5-degree glide slope: tan(3.5 deg) = 0.06116
   const slope = Math.tan(THREE.MathUtils.degToRad(3.5));
   const distances = [260, 460, 680, 920, 1180, 1450];
 
@@ -364,7 +494,6 @@ function rebuildGlideSlopeBoxes(overheadBreak = false) {
     glideBoxesGroup.add(frame);
   }
 
-  // If Stage 3 Case I Overhead Break, add amber turn-gate boxes showing the break path
   if (overheadBreak) {
     const breakMat = new THREE.LineBasicMaterial({ color: 0xf5a623 });
     const breakWaypoints = [
@@ -397,18 +526,53 @@ function rebuildGlideSlopeBoxes(overheadBreak = false) {
 // CLEAR ENTITIES HELPER
 // ==========================================
 function clearCombatEntities() {
+  if (game.wingman && game.wingman.mesh) {
+    scene.remove(game.wingman.mesh);
+  }
+  game.wingman = null;
+
   for (const e of game.enemies) scene.remove(e.mesh);
+  for (const g of game.groundTargets) scene.remove(g.mesh);
+  for (const r of game.skyRings) scene.remove(r.mesh);
   for (const b of game.bullets) scene.remove(b.mesh);
   for (const m of game.missiles) scene.remove(m.mesh);
+  for (const bmb of game.bombs) scene.remove(bmb.mesh);
   for (const f of game.flares) scene.remove(f.mesh);
   for (const p of game.particles) scene.remove(p.mesh);
 
   game.enemies = [];
+  game.groundTargets = [];
+  game.skyRings = [];
   game.bullets = [];
   game.missiles = [];
+  game.bombs = [];
   game.flares = [];
   game.particles = [];
   trapLineMesh.visible = false;
+  if (carrierGroup.userData.olsGroup) {
+    carrierGroup.userData.olsGroup.visible = true;
+  }
+}
+
+function resetPlayerForFlight(pos, yaw, speedKts, throttle, gearDown) {
+  const cfg = game.player.config;
+  const p = game.player;
+  p.pos.copy(pos);
+  p.pitch = gearDown ? -0.04 : 0.02;
+  p.roll = 0;
+  p.yaw = yaw;
+  p.quat.setFromEuler(new THREE.Euler(p.pitch, p.yaw, p.roll, 'YXZ'));
+  p.speedKts = speedKts || cfg.cruiseSpeedKts;
+  p.throttle = throttle;
+  p.hull = 100;
+  p.gearDown = Boolean(gearDown);
+  p.missiles = cfg.missiles;
+  p.bombs = cfg.bombs || 6;
+  p.flares = cfg.flares;
+  p.trappedWire = null;
+  p.trapProgress = 0;
+  p.lockedTarget = null;
+  p.lockProgress = 0;
 }
 
 // ==========================================
@@ -425,7 +589,6 @@ function startCombatMode() {
   game.kills = 0;
   game.wavePauseTimer = 0;
 
-  // Set crisp high-altitude combat atmosphere
   setAtmosphere({
     sunElevation: 28,
     sunAzimuth: 150,
@@ -443,30 +606,53 @@ function startCombatMode() {
   glideBoxesGroup.visible = false;
 
   const cfg = game.player.config;
-  const p = game.player;
-  p.pos.set(0, 420, 350);
-  p.pitch = 0.03;
-  p.roll = 0;
-  p.yaw = 0;
-  p.quat.setFromEuler(new THREE.Euler(p.pitch, p.yaw, p.roll, 'YXZ'));
-  p.speedKts = cfg.cruiseSpeedKts;
-  p.throttle = 0.76;
-  p.hull = 100;
-  p.gearDown = false;
-  p.missiles = cfg.missiles;
-  p.flares = cfg.flares;
-  p.trappedWire = null;
-  p.lockedTarget = null;
-  p.lockProgress = 0;
+  resetPlayerForFlight(new THREE.Vector3(0, 420, 350), 0, cfg.cruiseSpeedKts, 0.76, false);
 
   updateUIOverlays();
   spawnCombatWave(1);
   const radioCaller = cfg.id === 'f14' ? 'RIO GOOSE' : 'TOPGUN VIPER';
   sound.speakRadio(
     radioCaller,
-    `Talk to me, ${saveData.callsign}! Welcome to the Danger Zone—MiG-28s inbound, weapons free!`,
+    `Talk to me, ${saveData.callsign}! Welcome to the Danger Zone—MiG-28s & Su-57s inbound, weapons free!`,
     true
   );
+}
+
+function spawnEnemyPlane(type, spawnPos, labelOverride = null) {
+  const mesh = createJetMesh(type);
+  mesh.position.copy(spawnPos);
+  scene.add(mesh);
+
+  const isAce = type === 'su33' || type === 'su57';
+  const isBomber = type === 'bomber';
+  const isFlanker = type === 'su35';
+
+  const enemyObj = {
+    id: `enemy-${performance.now()}-${Math.random()}`,
+    type,
+    label:
+      labelOverride ||
+      (isAce
+        ? 'SU-57 FELON ACE'
+        : isFlanker
+        ? 'SU-35 FLANKER-E'
+        : isBomber
+        ? 'TU-22M BOMBER'
+        : 'MIG-28 AGGRESSOR'),
+    mesh,
+    pos: spawnPos.clone(),
+    vel: new THREE.Vector3(0, 0, 1),
+    quat: new THREE.Quaternion(),
+    speedKts: isAce ? 350 : isFlanker ? 335 : isBomber ? 235 : 305,
+    turnRate: isAce ? 1.58 : isFlanker ? 1.42 : isBomber ? 0.58 : 1.15,
+    hp: isAce ? 160 : isBomber ? 220 : 100,
+    maxHp: isAce ? 160 : isBomber ? 220 : 100,
+    missileTimer: 5.5 + Math.random() * 4.0,
+    gunTimer: 1.5 + Math.random() * 2.0,
+    antiShipRole: isBomber && game.state === 'SPECOPS' && game.specopsMission === 2
+  };
+  game.enemies.push(enemyObj);
+  return enemyObj;
 }
 
 function spawnCombatWave(waveNum) {
@@ -474,10 +660,10 @@ function spawnCombatWave(waveNum) {
   const isBossWave = waveNum % 3 === 0;
   const fighterCount = 2 + Math.min(5, waveNum);
   const bomberCount = waveNum >= 2 ? Math.floor(waveNum / 2) : 0;
-  const aceCount = isBossWave ? 2 : waveNum >= 4 ? 1 : 0;
+  const aceCount = isBossWave ? 2 : waveNum >= 3 ? 1 : 0;
 
   const spawnList = [];
-  for (let i = 0; i < fighterCount; i++) spawnList.push('mig29');
+  for (let i = 0; i < fighterCount; i++) spawnList.push(i % 2 === 0 ? 'mig29' : 'su35');
   for (let i = 0; i < bomberCount; i++) spawnList.push('bomber');
   for (let i = 0; i < aceCount; i++) spawnList.push('su33');
 
@@ -489,30 +675,7 @@ function spawnCombatWave(waveNum) {
       360 + (idx % 4) * 95,
       game.player.pos.z - Math.cos(angle) * dist
     );
-
-    const mesh = createJetMesh(type);
-    mesh.position.copy(spawnPos);
-    scene.add(mesh);
-
-    const isAce = type === 'su33';
-    const isBomber = type === 'bomber';
-
-    game.enemies.push({
-      id: `${waveNum}-${idx}-${performance.now()}`,
-      type,
-      label: isAce ? 'SU-57 FELON ACE' : isBomber ? 'TU-22M BOMBER' : 'MIG-28 AGGRESSOR',
-      mesh,
-      pos: spawnPos,
-      vel: new THREE.Vector3(0, 0, 1),
-      quat: new THREE.Quaternion(),
-      speedKts: isAce ? 345 : isBomber ? 245 : 305,
-      turnRate: isAce ? 1.55 : isBomber ? 0.62 : 1.15,
-      hp: isAce ? 160 : isBomber ? 220 : 100,
-      maxHp: isAce ? 160 : isBomber ? 220 : 100,
-      missileTimer: 5.5 + idx * 2.4,
-      gunTimer: 1.5 + Math.random() * 2.0,
-      evadeTimer: 0
-    });
+    spawnEnemyPlane(type, spawnPos);
   });
 
   game.player.lockedTarget = game.enemies[0] || null;
@@ -520,7 +683,313 @@ function spawnCombatWave(waveNum) {
 }
 
 // ==========================================
-// START MODE 2: CARRIER LANDING CHALLENGE
+// START MODE 2: AIR-TO-GROUND BOMBING STRIKES (3 MISSIONS)
+// ==========================================
+function spawnGroundTarget(targetType, label, x, y, z, hp = 180, canFireSam = false, movingVel = null) {
+  const mesh = createStrikeTargetMesh(targetType);
+  mesh.position.set(x, y, z);
+  scene.add(mesh);
+
+  const tgt = {
+    id: `gt-${performance.now()}-${Math.random()}`,
+    isGroundTarget: true,
+    targetType,
+    label,
+    mesh,
+    pos: new THREE.Vector3(x, y + 6, z),
+    vel: movingVel ? movingVel.clone() : new THREE.Vector3(0, 0, 0),
+    hp,
+    maxHp: hp,
+    canFireSam,
+    samTimer: 4.5 + Math.random() * 4.5
+  };
+  game.groundTargets.push(tgt);
+  return tgt;
+}
+
+function startStrikeMission(strikeId) {
+  sound.init();
+  sound.setMusicMode('dangerzone');
+  clearCombatEntities();
+
+  game.state = 'STRIKE';
+  game.strikeMission = strikeId;
+  game.missionPhase = 1;
+  game.score = 0;
+  game.kills = 0;
+  game.radarCeilingTimer = 0;
+  game.missionStartTime = performance.now() * 0.001;
+
+  carrierGroup.position.set(0, 0, 0);
+  carrierGroup.rotation.set(0, 0, 0);
+  glideBoxesGroup.visible = false;
+
+  const cfg = game.player.config;
+
+  if (strikeId === 1) {
+    // Strike 1: Operation Maverick Canyon ("Uranium Bunker Run")
+    // Island 0 is at (-2500, -2100). Place the Uranium Reactor Bunker on its southern coastal shelf (-2500, -1620)
+    setAtmosphere({
+      sunElevation: 18,
+      sunAzimuth: 140,
+      turbidity: 3.5,
+      fogDensity: 0.0001,
+      waterColor: 0x002b4d,
+      sunIntensity: 2.5,
+      ambientIntensity: 0.9
+    });
+
+    resetPlayerForFlight(new THREE.Vector3(-1250, 165, -350), 0.66, cfg.cruiseSpeedKts, 0.78, false);
+    // Double bomb load for canyon run
+    game.player.bombs = Math.max(8, cfg.bombs);
+
+    // Primary Uranium Bunker Target + 2 Flanking S-400 SAM Batteries
+    const bunker = spawnGroundTarget('bunker', 'URANIUM REACTOR BUNKER', -2500, 12, -1610, 200, false);
+    spawnGroundTarget('sam', 'CRATER SAM BATTERY WEST', -2660, 14, -1690, 100, true);
+    spawnGroundTarget('sam', 'CRATER SAM BATTERY EAST', -2340, 14, -1690, 100, true);
+
+    game.player.lockedTarget = bunker;
+    sound.speakRadio(
+      'TOPGUN MAVERICK',
+      `${saveData.callsign}, stay BELOW 850 feet radar ceiling! Align the green CCIP Bombing Pipper on the Uranium Reactor Bunker and press [V] to drop JDAMs!`,
+      true
+    );
+  } else if (strikeId === 2) {
+    // Strike 2: Island SEAD & SAM Suppression (6 Ground Targets across Islands)
+    setAtmosphere({
+      sunElevation: 26,
+      sunAzimuth: 155,
+      turbidity: 3.0,
+      fogDensity: 0.00009,
+      waterColor: 0x003056,
+      sunIntensity: 2.7,
+      ambientIntensity: 0.92
+    });
+
+    resetPlayerForFlight(new THREE.Vector3(1100, 290, -350), -0.72, cfg.cruiseSpeedKts, 0.78, false);
+    game.player.bombs = Math.max(10, cfg.bombs + 4);
+
+    // 6 Fortified Targets around Island 1 (x: 2800, z: -1750)
+    spawnGroundTarget('radar', 'EW RADAR DOME ALPHA', 2380, 11, -1380, 120, false);
+    spawnGroundTarget('sam', 'S-400 SAM SITE NORTH', 2520, 12, -1280, 110, true);
+    spawnGroundTarget('depot', 'FUEL DEPOT COMPLEX 1', 2260, 10, -1550, 110, false);
+    spawnGroundTarget('radar', 'EW RADAR DOME BRAVO', 3180, 11, -1420, 120, false);
+    spawnGroundTarget('sam', 'S-400 SAM SITE SOUTH', 2980, 12, -1240, 110, true);
+    spawnGroundTarget('depot', 'MUNITIONS DEPOT 2', 3250, 10, -1680, 110, false);
+
+    // 2 Defending MiG-28 CAP Fighters
+    spawnEnemyPlane('mig29', new THREE.Vector3(2450, 420, -1400));
+    spawnEnemyPlane('mig29', new THREE.Vector3(3050, 460, -1500));
+
+    game.player.lockedTarget = game.groundTargets[0];
+    sound.speakRadio(
+      'AWACS SKYEYE',
+      `Operation Iron Archipelago: Destroy all 6 Island Radar Domes, SAM Sites & Fuel Depots! Use [V] for JDAM Bombs, [F] for Missiles, and [T] to cycle targets!`,
+      true
+    );
+  } else {
+    // Strike 3: Crimson Fleet Naval Task Force Strike (4 Moving Enemy Warships)
+    setAtmosphere({
+      sunElevation: 4.5,
+      sunAzimuth: 190,
+      turbidity: 8.5,
+      fogDensity: 0.00018,
+      waterColor: 0x122234,
+      sunIntensity: 2.0,
+      ambientIntensity: 0.7
+    });
+
+    resetPlayerForFlight(new THREE.Vector3(0, 320, -180), 0, cfg.cruiseSpeedKts, 0.8, false);
+    game.player.bombs = Math.max(10, cfg.bombs + 4);
+
+    const shipVel = new THREE.Vector3(0, 0, 7.5); // Steaming South toward carrier
+    spawnGroundTarget('destroyer', 'BATTLECRUISER KIROV', 0, 0, -1650, 240, true, shipVel);
+    spawnGroundTarget('destroyer', 'DESTROYER SOVREMENNY', -240, 0, -1480, 160, true, shipVel);
+    spawnGroundTarget('destroyer', 'DESTROYER UDALOY', 240, 0, -1480, 160, true, shipVel);
+    spawnGroundTarget('destroyer', 'FRIGATE GRIGOROVICH', 0, 0, -1320, 150, false, shipVel);
+
+    // 2 Su-35 Flanker Naval Escorts
+    spawnEnemyPlane('su35', new THREE.Vector3(-180, 440, -1550));
+    spawnEnemyPlane('su35', new THREE.Vector3(180, 460, -1550));
+
+    game.player.lockedTarget = game.groundTargets[0];
+    sound.speakRadio(
+      'AWACS SKYEYE',
+      `Operation Crimson Fleet: Enemy Battlecruiser & 3 Destroyers steaming south! Align your CCIP Bombing Pipper [V] on their decks and sink the task force!`,
+      true
+    );
+  }
+
+  updateUIOverlays();
+}
+
+// ==========================================
+// START MODE 3: SPECIAL OPERATIONS (3 FUN MISSIONS)
+// ==========================================
+function startSpecOpsMission(opId) {
+  sound.init();
+  sound.setMusicMode('dangerzone');
+  clearCombatEntities();
+
+  game.state = 'SPECOPS';
+  game.specopsMission = opId;
+  game.missionPhase = 1;
+  game.score = 0;
+  game.kills = 0;
+  game.missionStartTime = performance.now() * 0.001;
+  game.carrierHp = 100;
+  game.ringIndex = 0;
+
+  carrierGroup.position.set(0, 0, 0);
+  carrierGroup.rotation.set(0, 0, 0);
+  glideBoxesGroup.visible = false;
+
+  const cfg = game.player.config;
+
+  if (opId === 1) {
+    // Op 1: Mach 10 "Darkstar" Canyon Ring Time-Trial
+    setAtmosphere({
+      sunElevation: 22,
+      sunAzimuth: 145,
+      turbidity: 3.0,
+      fogDensity: 0.00008,
+      waterColor: 0x002d52,
+      sunIntensity: 2.7,
+      ambientIntensity: 0.92
+    });
+
+    resetPlayerForFlight(new THREE.Vector3(45, 75, 520), 0, Math.min(520, cfg.maxSpeedKts * 0.8), 0.92, false);
+
+    // Build 16 Glowing Sky Gates curving past the Carrier Tower and toward the NW Island Lagoon
+    const ringCoords = [
+      [40, 62, 180],
+      [32, 52, -60],
+      [-40, 68, -320],
+      [-160, 88, -580],
+      [-340, 110, -820],
+      [-580, 125, -1040],
+      [-860, 115, -1240],
+      [-1160, 95, -1420],
+      [-1460, 82, -1580],
+      [-1720, 95, -1780],
+      [-1920, 135, -2050],
+      [-1820, 185, -2380],
+      [-1520, 225, -2520],
+      [-1180, 195, -2350],
+      [-840, 145, -2050],
+      [-480, 110, -1720]
+    ];
+
+    game.totalRings = ringCoords.length;
+    ringCoords.forEach((rc, idx) => {
+      const rMesh = createStrikeTargetMesh('skyring');
+      rMesh.position.set(rc[0], rc[1], rc[2]);
+      if (idx < ringCoords.length - 1) {
+        const next = ringCoords[idx + 1];
+        rMesh.lookAt(next[0], next[1], next[2]);
+      }
+      scene.add(rMesh);
+      game.skyRings.push({
+        index: idx,
+        mesh: rMesh,
+        pos: new THREE.Vector3(rc[0], rc[1], rc[2]),
+        cleared: false
+      });
+    });
+
+    sound.speakRadio(
+      'TOPGUN VIPER',
+      `Mach 10 Canyon Time-Trial! Punch full afterburner [W] and fly through all 16 glowing Sky Rings in sequence!`,
+      true
+    );
+  } else if (opId === 2) {
+    // Op 2: "Defend the Fleet" — Carrier Escort against 3 Waves of Heavy Bombers
+    setAtmosphere({
+      sunElevation: 15,
+      sunAzimuth: 130,
+      turbidity: 4.2,
+      fogDensity: 0.00011,
+      waterColor: 0x002646,
+      sunIntensity: 2.4,
+      ambientIntensity: 0.88
+    });
+
+    resetPlayerForFlight(new THREE.Vector3(0, 310, -120), 0, cfg.cruiseSpeedKts, 0.82, false);
+    game.wave = 1;
+    spawnFleetDefenseWave(1);
+
+    sound.speakRadio(
+      'AIR BOSS TOWER',
+      `Red Alert! Tu-22M Backfire Bombers inbound to sink USS Nimitz! Splash the bombers before they launch anti-ship missiles at the carrier!`,
+      true
+    );
+  } else {
+    // Op 3: "Maverick & Rooster" Wingman Furball + Carrier Trap!
+    setAtmosphere({
+      sunElevation: 9,
+      sunAzimuth: 175,
+      turbidity: 6.5,
+      fogDensity: 0.00014,
+      waterColor: 0x0d2238,
+      sunIntensity: 2.2,
+      ambientIntensity: 0.78
+    });
+
+    resetPlayerForFlight(new THREE.Vector3(0, 380, 420), 0, cfg.cruiseSpeedKts, 0.8, false);
+
+    // Spawn Friendly AI Wingman "ROOSTER" on Player's Starboard Wing
+    const wingMesh = createJetMesh(cfg.id === 'f14' ? 'f18' : 'f14');
+    const wingPos = new THREE.Vector3(35, 382, 435);
+    wingMesh.position.copy(wingPos);
+    scene.add(wingMesh);
+    game.wingman = {
+      callsign: 'ROOSTER',
+      mesh: wingMesh,
+      pos: wingPos,
+      vel: new THREE.Vector3(0, 0, -1),
+      quat: new THREE.Quaternion(),
+      speedKts: 350,
+      missileTimer: 3.5
+    };
+
+    // Spawn Crimson Ace Squadron (3 Su-57 Felons + 3 MiG-28s)
+    const formation = ['su57', 'su33', 'su57', 'mig29', 'mig29', 'su35'];
+    formation.forEach((t, i) => {
+      const ang = (i - 2.5) * 0.25;
+      const sPos = new THREE.Vector3(Math.sin(ang) * 1450, 390 + (i % 3) * 65, -1350 - (i % 2) * 280);
+      spawnEnemyPlane(t, sPos, t === 'su57' || t === 'su33' ? 'CRIMSON SU-57 ACE' : 'CRIMSON MIG-28');
+    });
+    game.player.lockedTarget = game.enemies[0];
+
+    sound.speakRadio(
+      'WINGMAN ROOSTER',
+      `Rooster on your starboard wing, ${saveData.callsign}! Let's splash all 6 Crimson Squadron bandits, then bring it home to the carrier deck!`,
+      true
+    );
+  }
+
+  updateUIOverlays();
+}
+
+function spawnFleetDefenseWave(waveNum) {
+  game.wave = waveNum;
+  const bomberCount = 2 + waveNum;
+  const escortCount = 1 + Math.floor(waveNum / 2);
+
+  for (let i = 0; i < bomberCount; i++) {
+    const spreadX = (i - (bomberCount - 1) * 0.5) * 320;
+    const pos = new THREE.Vector3(spreadX, 240 + (i % 2) * 45, -1850 - i * 220);
+    spawnEnemyPlane('bomber', pos, 'TU-22M STRIKE BOMBER');
+  }
+  for (let i = 0; i < escortCount; i++) {
+    const pos = new THREE.Vector3((i === 0 ? -1 : 1) * 380, 340, -1650);
+    spawnEnemyPlane('su33', pos, 'SU-57 ESCORT ACE');
+  }
+  game.player.lockedTarget = game.enemies[0] || null;
+}
+
+// ==========================================
+// START MODE 4: 10-STAGE CARRIER LANDING CHALLENGE
 // ==========================================
 function startCarrierStage(stageNum) {
   sound.init();
@@ -538,29 +1007,47 @@ function startCarrierStage(stageNum) {
   carrierGroup.rotation.set(0, 0, 0);
 
   rebuildGlideSlopeBoxes(stage.overheadBreak);
-  glideBoxesGroup.visible = game.showGlideBoxes;
+  glideBoxesGroup.visible = game.showGlideBoxes && !stage.meatballOut;
+  if (carrierGroup.userData.olsGroup) {
+    carrierGroup.userData.olsGroup.visible = !stage.meatballOut;
+  }
 
   const cfg = game.player.config;
-  const p = game.player;
-  p.pos.copy(stage.startPos);
-  p.pitch = stage.overheadBreak ? 0.0 : -0.04;
-  p.roll = 0;
-  p.yaw = stage.startYaw;
-  p.quat.setFromEuler(new THREE.Euler(p.pitch, p.yaw, p.roll, 'YXZ'));
-  p.speedKts = stage.startSpeedKts;
-  p.throttle = stage.overheadBreak ? 0.75 : 0.43;
-  p.hull = 100;
-  p.gearDown = stage.startGearDown;
-  p.missiles = cfg.missiles;
-  p.flares = cfg.flares;
-  p.trappedWire = null;
-  p.trapProgress = 0;
-  p.lockedTarget = null;
-  p.lockProgress = 0;
+  resetPlayerForFlight(
+    stage.startPos,
+    stage.startYaw,
+    stage.startSpeedKts,
+    stage.overheadBreak || stage.cobraEntry ? 0.75 : 0.43,
+    stage.startGearDown
+  );
 
   updateUIOverlays();
 
-  if (stage.overheadBreak) {
+  if (stage.engineFailure) {
+    sound.speakRadio(
+      'LSO PADDLES',
+      `Mayday ${saveData.callsign}! Starboard engine flameout—counter right yaw with Left Rudder [A] and nurse her onto the #3 wire!`,
+      true
+    );
+  } else if (stage.cobraEntry) {
+    sound.speakRadio(
+      'LSO PADDLES',
+      `${saveData.callsign}, you're hot at 275 knots! Cut throttle [S], pitch up a Cobra airbrake to bleed below 190 knots, press [L] for gear, and trap!`,
+      true
+    );
+  } else if (stage.meatballOut) {
+    sound.speakRadio(
+      'LSO PADDLES',
+      `${saveData.callsign}, optical Meatball is knocked out! Fly a pure LSO talk-down approach—listen to my voice calls all the way to the deck!`,
+      true
+    );
+  } else if (stage.carrierTurning) {
+    sound.speakRadio(
+      'LSO PADDLES',
+      `${saveData.callsign}, CVN-68 is executing evasive S-turns at 28 knots! Track the turning angled deck and call the ball!`,
+      true
+    );
+  } else if (stage.overheadBreak) {
     sound.speakRadio(
       'LSO PADDLES',
       `${saveData.callsign}, Case One overhead break! Pass the carrier bow at 800 feet, break left 180 degrees, drop gear and hook!`,
@@ -576,7 +1063,7 @@ function startCarrierStage(stageNum) {
 }
 
 // ==========================================
-// WEAPONS, FLARES & EXPLOSIONS
+// WEAPONS: CANNON, MISSILES, PRECISION JDAM BOMBS & FLARES
 // ==========================================
 const bulletGeo = new THREE.BoxGeometry(0.18, 0.18, 4.5);
 const playerBulletMat = new THREE.MeshBasicMaterial({ color: 0xfff066 });
@@ -619,13 +1106,13 @@ function firePlayerMissile() {
   const p = game.player;
   if (p.missiles <= 0 || p.missileCooldown > 0) return;
   p.missiles -= 1;
-  p.missileCooldown = 0.65;
+  p.missileCooldown = 0.6;
 
   sound.playMissileLaunch();
   const isLocked = p.lockProgress >= 1.0 && p.lockedTarget && p.lockedTarget.hp > 0;
   sound.speakRadio(
     'AWACS SKYEYE',
-    isLocked ? `${saveData.callsign}, Fox Two! Missile tracking!` : 'Fox Two—missile away!',
+    isLocked ? `${saveData.callsign}, Fox Two! Missile tracking ${p.lockedTarget.label}!` : 'Fox Two—missile away!',
     false
   );
 
@@ -653,48 +1140,123 @@ function firePlayerMissile() {
   game.missiles.push({
     mesh: mGroup,
     pos: spawnPos,
-    vel: forward.clone().multiplyScalar(p.speedKts * 0.5144 + 290),
+    vel: forward.clone().multiplyScalar(p.speedKts * 0.5144 + 295),
     quat: p.quat.clone(),
     target: isLocked ? p.lockedTarget : null,
     isPlayer: true,
-    speedMps: 380,
-    turnRate: isLocked ? 3.4 : 0.0,
+    speedMps: 390,
+    turnRate: isLocked ? 3.5 : 0.0,
     ttl: 7.5
   });
 }
 
-function fireEnemyMissile(enemy) {
-  const toPlayer = game.player.pos.clone().sub(enemy.pos);
-  const dist = toPlayer.length();
-  if (dist > 2100 || dist < 180) return;
+// Compute ballistic ground impact point for CCIP Bombing Pipper on HUD
+const BOMB_GRAVITY = 34.0;
+function computeBombImpactPoint(startPos, startVel, targetY = 8.0) {
+  const dy = startPos.y - targetY;
+  if (dy <= 1.0) return startPos.clone();
+  const vy = startVel.y - 6.0;
+  // 0.5 * g * t^2 - vy * t - dy = 0
+  const disc = vy * vy + 2.0 * BOMB_GRAVITY * dy;
+  const tImpact = (vy + Math.sqrt(Math.max(0, disc))) / BOMB_GRAVITY;
+  return new THREE.Vector3(
+    startPos.x + startVel.x * tImpact,
+    targetY,
+    startPos.z + startVel.z * tImpact
+  );
+}
 
-  const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(enemy.quat).normalize();
-  if (forward.dot(toPlayer.normalize()) < 0.65) return;
+function dropPlayerBomb() {
+  const p = game.player;
+  if (p.bombs <= 0 || p.bombCooldown > 0) return;
+  p.bombs -= 1;
+  p.bombCooldown = 0.45;
 
+  sound.playBombDrop();
+
+  // Build 2,000-lb GBU-31 JDAM Guided Bomb Mesh
+  const bGroup = new THREE.Group();
+  const bBody = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.24, 0.24, 3.0, 10).rotateX(Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0x4b5d42 })
+  );
+  const bNose = new THREE.Mesh(
+    new THREE.ConeGeometry(0.24, 0.7, 10).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0xf5b82e })
+  );
+  bNose.position.z = -1.85;
+  bGroup.add(bBody, bNose);
+
+  const sideOffset = (p.bombs % 2 === 0 ? 1 : -1) * 1.9;
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat).normalize();
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(p.quat).normalize();
+  const spawnPos = p.pos.clone().addScaledVector(right, sideOffset).addScaledVector(up, -0.8);
+
+  bGroup.position.copy(spawnPos);
+  bGroup.quaternion.copy(p.quat);
+  scene.add(bGroup);
+
+  // Check if CCIP pipper is near a ground target or if player has a ground target selected
+  const impactPt = computeBombImpactPoint(p.pos, p.vel, 10.0);
+  let guidedTarget = null;
+  let bestDist = 420;
+  for (const gt of game.groundTargets) {
+    const d = impactPt.distanceTo(gt.pos);
+    if (d < bestDist) {
+      bestDist = d;
+      guidedTarget = gt;
+    }
+  }
+  if (!guidedTarget && p.lockedTarget && p.lockedTarget.isGroundTarget) {
+    guidedTarget = p.lockedTarget;
+  }
+
+  sound.speakRadio(
+    'TOPGUN WEAPONS',
+    guidedTarget
+      ? `Pickle! GBU-31 JDAM away—tracking ${guidedTarget.label}!`
+      : 'Pickle! 2,000-pound JDAM bomb away!',
+    false
+  );
+
+  const initVel = p.vel.clone();
+  initVel.y -= 6.0;
+
+  game.bombs.push({
+    mesh: bGroup,
+    pos: spawnPos,
+    vel: initVel,
+    target: guidedTarget,
+    ttl: 14.0
+  });
+}
+
+function fireEnemyMissile(shooterPos, shooterQuat, warningText = 'Warning! Bandit missile launch! Press G for flares!') {
   const mGroup = new THREE.Group();
   const body = new THREE.Mesh(
     new THREE.CylinderGeometry(0.16, 0.16, 3.2, 8).rotateX(Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: 0xff3b47 })
   );
   mGroup.add(body);
-  mGroup.position.copy(enemy.pos);
-  mGroup.quaternion.copy(enemy.quat);
+  mGroup.position.copy(shooterPos);
+  mGroup.quaternion.copy(shooterQuat);
   scene.add(mGroup);
 
+  const forward = game.player.pos.clone().sub(shooterPos).normalize();
   game.missiles.push({
     mesh: mGroup,
-    pos: enemy.pos.clone(),
-    vel: forward.clone().multiplyScalar(280),
-    quat: enemy.quat.clone(),
+    pos: shooterPos.clone(),
+    vel: forward.multiplyScalar(275),
+    quat: shooterQuat.clone(),
     target: game.player,
     isPlayer: false,
-    speedMps: 295,
-    turnRate: 1.95,
+    speedMps: 290,
+    turnRate: 1.85,
     ttl: 6.5,
     spoofedByFlare: null
   });
 
-  sound.speakRadio('AWACS SKYEYE', 'Warning! Bandit missile launch! Press G for flares!', false);
+  sound.speakRadio('AWACS SKYEYE', warningText, false);
 }
 
 function deployPlayerFlares() {
@@ -730,7 +1292,6 @@ function deployPlayerFlares() {
     };
     game.flares.push(flareObj);
 
-    // Divert any incoming enemy missiles toward this flare decoy!
     for (const m of game.missiles) {
       if (!m.isPlayer && !m.spoofedByFlare) {
         m.spoofedByFlare = flareObj;
@@ -793,12 +1354,11 @@ function spawnSmokePuff(pos, size = 0.55, colorHex = 0xdce6f2, ttl = 0.55) {
 // ==========================================
 // PHYSICS & SIMULATION STEP
 // ==========================================
-let pitchInvertStick = true; // True = ArrowDown pulls nose UP (flight stick); press [I] to toggle
+let pitchInvertStick = true;
 
 function updateSimulation(dt) {
   const nowSec = performance.now() * 0.001;
 
-  // Advance Carrier Radar Spinner
   if (carrierGroup.userData.radarSpinner) {
     carrierGroup.userData.radarSpinner.rotation.y += dt * 1.8;
   }
@@ -833,15 +1393,23 @@ function updateSimulation(dt) {
   const p = game.player;
   const cfg = p.config;
 
-  // Cooldowns
   p.gunCooldown = Math.max(0, p.gunCooldown - dt);
   p.missileCooldown = Math.max(0, p.missileCooldown - dt);
+  p.bombCooldown = Math.max(0, p.bombCooldown - dt);
   p.flareCooldown = Math.max(0, p.flareCooldown - dt);
 
   // Update Carrier Motion in Carrier Mode
   const stage = CARRIER_STAGES[game.carrierStage] || CARRIER_STAGES[1];
   if (game.state === 'CARRIER') {
-    carrierGroup.position.z -= stage.carrierSpeedMps * dt;
+    if (stage.carrierTurning) {
+      // Stage 10: Evasive S-Turning Carrier
+      carrierGroup.rotation.y = Math.sin(nowSec * 0.24) * 0.22;
+      const cFwd = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carrierGroup.rotation.y);
+      carrierGroup.position.addScaledVector(cFwd, stage.carrierSpeedMps * dt);
+    } else {
+      carrierGroup.position.z -= stage.carrierSpeedMps * dt;
+    }
+
     if (stage.deckPitchAmp > 0) {
       carrierGroup.rotation.x = Math.sin(nowSec * 1.35) * stage.deckPitchAmp;
       carrierGroup.rotation.z = Math.cos(nowSec * 1.05) * (stage.deckPitchAmp * 0.65);
@@ -863,43 +1431,48 @@ function updateSimulation(dt) {
     p.mesh.position.copy(p.pos);
     updateJetVisuals(p.mesh, p.speedKts, 0, true, 0, 0);
 
-    // Update stretched arrestor wire line from port/starboard sheaves to tailhook
     const wireZ = carrierGroup.userData.wirePositionsZ[p.trappedWire - 1];
     const localHookZ = p.pos.z - carrierGroup.position.z + 4.8;
     const posArr = trapLineGeo.attributes.position;
     posArr.setXYZ(0, -17, 20.25, wireZ);
-    posArr.setXYZ(1, p.pos.x, 20.35, localHookZ);
+    posArr.setXYZ(1, p.pos.x - carrierGroup.position.x, 20.35, localHookZ);
     posArr.setXYZ(2, 17, 20.25, wireZ);
     posArr.needsUpdate = true;
     trapLineMesh.visible = true;
 
     if (p.speedKts <= 1 || p.trapProgress > 2.2) {
-      finishCarrierTrap();
+      if (game.state === 'SPECOPS' && game.specopsMission === 3) {
+        finishSpecOpsWingmanSortie();
+      } else {
+        finishCarrierTrap();
+      }
     }
     updateCamera(dt);
     return;
   }
 
   // ==========================================
-  // KEYBOARD FLIGHT CONTROLS (ARCADE-PLUS)
+  // KEYBOARD FLIGHT CONTROLS
   // ==========================================
-  // Throttle: W / S
+  const isEngineFailed = game.state === 'CARRIER' && stage.engineFailure;
+  const maxThrottleAllowed = isEngineFailed ? 0.76 : 1.0;
+
   if (keys['KeyW']) {
-    p.throttle = Math.min(1.0, p.throttle + 0.42 * dt);
+    p.throttle = Math.min(maxThrottleAllowed, p.throttle + 0.42 * dt);
   } else if (keys['KeyS']) {
-    p.throttle = Math.max(0.05, p.throttle - 0.48 * dt);
+    p.throttle = Math.max(0.05, p.throttle - 0.52 * dt);
   }
 
-  // Target Airspeed based on Throttle, Gear Drag, and Pitch Climb/Dive
   const maxSpd = p.gearDown ? Math.min(265, cfg.maxSpeedKts * 0.45) : cfg.maxSpeedKts;
   const minSpd = cfg.minSpeedKts;
-  const targetSpd = minSpd + p.throttle * (maxSpd - minSpd) - Math.sin(p.pitch) * 48;
-  p.speedKts += (targetSpd - p.speedKts) * Math.min(1, dt * 2.2);
+  // High-AoA Cobra pitch-up bleeds airspeed rapidly (used in Stage 7 Cobra Short-Field Trap!)
+  const cobraDrag = p.pitch > 0.28 ? Math.sin(p.pitch) * 145 : Math.sin(p.pitch) * 48;
+  const targetSpd = minSpd + p.throttle * (maxSpd - minSpd) - cobraDrag;
+  p.speedKts += (targetSpd - p.speedKts) * Math.min(1, dt * 2.4);
   p.speedKts = Math.max(minSpd * 0.92, Math.min(cfg.maxSpeedKts * 1.05, p.speedKts));
 
   sound.updateEngine(p.throttle, true);
 
-  // Pitch, Roll, Yaw Inputs
   let pitchInput = 0;
   if (keys['ArrowDown']) pitchInput += pitchInvertStick ? 1 : -1;
   if (keys['ArrowUp']) pitchInput += pitchInvertStick ? -1 : 1;
@@ -912,7 +1485,18 @@ function updateSimulation(dt) {
   if (keys['KeyA']) yawInput += 1;
   if (keys['KeyD']) yawInput -= 1;
 
-  // Apply Angular Rotations in Local Aircraft Frame
+  // Stage 6 Single-Engine Flameout: Asymmetric starboard thrust loss pulls nose right & banks right
+  if (isEngineFailed) {
+    yawInput -= 0.28;
+    rollInput -= 0.14;
+    if (Math.random() < 0.65) {
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat);
+      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat);
+      const smokePos = p.pos.clone().addScaledVector(right, 0.85).addScaledVector(fwd, -5.2);
+      spawnSmokePuff(smokePos, 0.65, 0x383e46, 0.65);
+    }
+  }
+
   const dPitch = pitchInput * cfg.pitchRate * dt;
   const dRoll = rollInput * cfg.rollRate * dt;
   const dYaw = yawInput * cfg.yawRate * dt;
@@ -920,42 +1504,40 @@ function updateSimulation(dt) {
   const qDelta = new THREE.Quaternion().setFromEuler(new THREE.Euler(dPitch, dYaw, dRoll, 'YXZ'));
   p.quat.multiply(qDelta).normalize();
 
-  // Extract Euler Angles to apply Arcade-Plus Bank-to-Turn & Gentle Auto-Leveling
   const euler = new THREE.Euler().setFromQuaternion(p.quat, 'YXZ');
   p.pitch = THREE.MathUtils.clamp(euler.x, -Math.PI * 0.46, Math.PI * 0.46);
   p.yaw = euler.y;
   p.roll = euler.z;
 
-  // Natural Coordinated Turn: Banking rolls the nose smoothly into the turn
   const bankTurnRate = Math.sin(p.roll) * 0.62 * dt;
   p.yaw += bankTurnRate;
 
-  // Gentle Auto-Leveling when no Roll key is pressed and bank is mild (< 25 deg)
-  if (rollInput === 0 && Math.abs(p.roll) < 0.45) {
+  if (rollInput === 0 && Math.abs(p.roll) < 0.45 && !isEngineFailed) {
     p.roll *= Math.pow(0.18, dt);
   }
-  // Gentle Pitch Stabilization toward level/glide slope when no Pitch key pressed
   if (pitchInput === 0 && Math.abs(p.roll) < 0.35) {
-    const restPitch = game.state === 'CARRIER' && p.gearDown ? -0.052 : 0.0;
+    const restPitch = (game.state === 'CARRIER' || (game.state === 'SPECOPS' && game.specopsMission === 3 && game.missionPhase === 2)) && p.gearDown ? -0.052 : 0.0;
     p.pitch += (restPitch - p.pitch) * Math.min(1, dt * 0.75);
   }
 
   p.quat.setFromEuler(new THREE.Euler(p.pitch, p.yaw, p.roll, 'YXZ'));
 
-  // Compute G-Load & Clamped Realistic Angle of Attack (AoA)
   p.gLoad = +(1.0 + pitchInput * (p.speedKts / 145) * 3.2 + Math.abs(Math.sin(p.roll)) * 1.1).toFixed(1);
   const idealSpd = cfg.idealApproachKts;
   const baseAoa = THREE.MathUtils.clamp(8.1 + (idealSpd - p.speedKts) * 0.032, 1.5, 14.5);
   p.aoaDeg = +THREE.MathUtils.clamp(baseAoa + pitchInput * 4.5, -3.5, 22.0).toFixed(1);
 
-  // Move Player Position
   const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat).normalize();
   const speedMps = p.speedKts * 0.5144;
   p.vel.copy(forward).multiplyScalar(speedMps);
 
-  // Add Wind & Turbulence in Carrier Mode
+  // Add Wind & Gusting Squall Turbulence in Carrier Mode
   if (game.state === 'CARRIER') {
     p.vel.add(stage.windVec);
+    if (stage.windGusting) {
+      p.vel.x += Math.sin(nowSec * 1.1) * 14.5;
+      p.vel.y += Math.cos(nowSec * 1.7) * 4.5;
+    }
     if (stage.turbulence > 0) {
       p.vel.y += Math.sin(nowSec * 3.7) * stage.turbulence * 3.2;
       p.vel.x += Math.cos(nowSec * 2.9) * stage.turbulence * 2.5;
@@ -970,7 +1552,6 @@ function updateSimulation(dt) {
   p.mesh.quaternion.copy(p.quat);
   updateJetVisuals(p.mesh, p.speedKts, p.throttle, p.gearDown, pitchInput, rollInput);
 
-  // Wingtip Contrails during high-G turns or high speed
   if (Math.abs(p.gLoad) > 2.5 || p.speedKts > 480) {
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat).normalize();
     for (const side of [-5.8, 5.8]) {
@@ -978,13 +1559,11 @@ function updateSimulation(dt) {
     }
   }
 
-  // Player Weapons Trigger
   if (keys['Space']) {
     firePlayerCannon();
   }
 
-  // Top Gun "Buzz the Tower" Flyby Detection!
-  // Carrier Island Tower is at carrierGroup.position + (27, 44, -24)
+  // Top Gun "Buzz the Tower" Flyby Detection
   const towerWorldPos = new THREE.Vector3(
     carrierGroup.position.x + 27,
     44,
@@ -999,12 +1578,10 @@ function updateSimulation(dt) {
     game.lastTowerBuzzTime = nowSec;
     game.cameraShake = 0.75;
     sound.playFlybyRoar();
-    if (game.state === 'COMBAT') {
-      game.score += 250;
-      if (game.score > saveData.bestScore) {
-        saveData.bestScore = game.score;
-        writeSaveData(saveData);
-      }
+    game.score += 250;
+    if (game.score > saveData.bestScore) {
+      saveData.bestScore = game.score;
+      writeSaveData(saveData);
     }
     sound.speakRadio(
       'AIR BOSS TOWER',
@@ -1013,7 +1590,6 @@ function updateSimulation(dt) {
     );
   }
 
-  // Update Projectiles, Missiles, Flares & Particles
   updateProjectilesAndParticles(dt);
 
   // Mode-Specific Logic
@@ -1021,6 +1597,10 @@ function updateSimulation(dt) {
     updateCombatMode(dt);
   } else if (game.state === 'CARRIER') {
     updateCarrierApproach(dt);
+  } else if (game.state === 'STRIKE') {
+    updateStrikeMission(dt);
+  } else if (game.state === 'SPECOPS') {
+    updateSpecOpsMission(dt);
   }
 
   // Check Sea / Water Impact
@@ -1050,12 +1630,12 @@ function updateSimulation(dt) {
 }
 
 // ==========================================
-// UPDATE PROJECTILES, MISSILES & PARTICLES
+// UPDATE PROJECTILES, MISSILES, BOMBS & PARTICLES
 // ==========================================
 function updateProjectilesAndParticles(dt) {
   const p = game.player;
 
-  // Bullets
+  // 1. Bullets (hit both Air Enemies and Ground/Naval Strike Targets!)
   for (let i = game.bullets.length - 1; i >= 0; i--) {
     const b = game.bullets[i];
     b.ttl -= dt;
@@ -1076,6 +1656,19 @@ function updateProjectilesAndParticles(dt) {
           break;
         }
       }
+      if (!hit) {
+        for (const gt of game.groundTargets) {
+          if (b.pos.distanceTo(gt.pos) < 24) {
+            gt.hp -= 14;
+            spawnExplosion(b.pos, 0.45);
+            hit = true;
+            if (gt.hp <= 0) {
+              destroyGroundTarget(gt);
+            }
+            break;
+          }
+        }
+      }
     } else if (b.pos.distanceTo(p.pos) < 9.5) {
       p.hull = Math.max(0, p.hull - 6);
       spawnExplosion(b.pos, 0.3);
@@ -1093,7 +1686,62 @@ function updateProjectilesAndParticles(dt) {
     }
   }
 
-  // Flares
+  // 2. Precision Guided Bombs (GBU-31 JDAMs)
+  for (let i = game.bombs.length - 1; i >= 0; i--) {
+    const bmb = game.bombs[i];
+    bmb.ttl -= dt;
+    bmb.vel.y -= BOMB_GRAVITY * dt;
+
+    // Terminal GPS / Laser guidance toward target horizontal coordinates
+    if (bmb.target && bmb.target.hp > 0) {
+      const toTgtXZ = new THREE.Vector2(bmb.target.pos.x - bmb.pos.x, bmb.target.pos.z - bmb.pos.z);
+      const horizDist = toTgtXZ.length();
+      if (horizDist > 2.0 && horizDist < 650) {
+        toTgtXZ.normalize();
+        const horizSpd = Math.hypot(bmb.vel.x, bmb.vel.z);
+        bmb.vel.x = THREE.MathUtils.lerp(bmb.vel.x, toTgtXZ.x * horizSpd, Math.min(1, dt * 3.2));
+        bmb.vel.z = THREE.MathUtils.lerp(bmb.vel.z, toTgtXZ.y * horizSpd, Math.min(1, dt * 3.2));
+      }
+    }
+
+    bmb.pos.addScaledVector(bmb.vel, dt);
+    bmb.mesh.position.copy(bmb.pos);
+    bmb.mesh.lookAt(bmb.pos.clone().add(bmb.vel));
+    spawnSmokePuff(bmb.pos, 0.55, 0xf5d77f, 0.35);
+
+    let bombDetonated = false;
+    for (const gt of game.groundTargets) {
+      if (bmb.pos.distanceTo(gt.pos) < 32) {
+        bombDetonated = true;
+        break;
+      }
+    }
+    if (bmb.pos.y <= 8.0 || bmb.ttl <= 0) {
+      bombDetonated = true;
+    }
+
+    if (bombDetonated) {
+      spawnExplosion(bmb.pos, 2.8, 0xff9922);
+      game.cameraShake = Math.max(game.cameraShake, 0.55);
+
+      // 95-meter heavy blast radius damages/destroys all ground & naval targets nearby!
+      for (let gIdx = game.groundTargets.length - 1; gIdx >= 0; gIdx--) {
+        const gt = game.groundTargets[gIdx];
+        const dist = bmb.pos.distanceTo(gt.pos);
+        if (dist < 105) {
+          gt.hp -= 160 * (1.0 - dist / 135);
+          if (gt.hp <= 0) {
+            destroyGroundTarget(gt);
+          }
+        }
+      }
+
+      scene.remove(bmb.mesh);
+      game.bombs.splice(i, 1);
+    }
+  }
+
+  // 3. Flares
   for (let i = game.flares.length - 1; i >= 0; i--) {
     const f = game.flares[i];
     f.ttl -= dt;
@@ -1109,13 +1757,12 @@ function updateProjectilesAndParticles(dt) {
     }
   }
 
-  // Missiles
+  // 4. Missiles
   let incomingEnemyMissile = false;
   for (let i = game.missiles.length - 1; i >= 0; i--) {
     const m = game.missiles[i];
     m.ttl -= dt;
 
-    // Guidance steering
     const targetObj = m.spoofedByFlare || m.target;
     if (targetObj && m.turnRate > 0) {
       const targetPos = targetObj.pos;
@@ -1143,6 +1790,19 @@ function updateProjectilesAndParticles(dt) {
           break;
         }
       }
+      if (!detonated) {
+        for (const gt of game.groundTargets) {
+          if (m.pos.distanceTo(gt.pos) < 28) {
+            gt.hp -= 85;
+            spawnExplosion(gt.pos, 1.45);
+            detonated = true;
+            if (gt.hp <= 0) {
+              destroyGroundTarget(gt);
+            }
+            break;
+          }
+        }
+      }
     } else {
       if (!m.spoofedByFlare) {
         incomingEnemyMissile = true;
@@ -1151,7 +1811,7 @@ function updateProjectilesAndParticles(dt) {
         spawnExplosion(m.pos, 0.9, 0xffee55);
         detonated = true;
       } else if (m.pos.distanceTo(p.pos) < 14) {
-        p.hull = Math.max(0, p.hull - 34);
+        p.hull = Math.max(0, p.hull - 32);
         spawnExplosion(p.pos, 1.4);
         detonated = true;
         if (p.hull <= 0) {
@@ -1167,16 +1827,15 @@ function updateProjectilesAndParticles(dt) {
     }
   }
 
-  // Incoming Missile Warning Banner & Audio Beep
   const alertBanner = document.getElementById('alert-warning-banner');
-  if (incomingEnemyMissile && game.state === 'COMBAT') {
+  if (incomingEnemyMissile && (game.state === 'COMBAT' || game.state === 'STRIKE' || game.state === 'SPECOPS')) {
     alertBanner.classList.remove('hidden');
     sound.playWarningBeep();
   } else {
     alertBanner.classList.add('hidden');
   }
 
-  // Explosion & Smoke Particles
+  // 5. Explosion & Smoke Particles
   for (let i = game.particles.length - 1; i >= 0; i--) {
     const pt = game.particles[i];
     pt.ttl -= dt;
@@ -1198,7 +1857,7 @@ function destroyEnemy(enemy) {
   scene.remove(enemy.mesh);
   game.enemies.splice(idx, 1);
 
-  const pts = enemy.type === 'su33' ? 500 : enemy.type === 'bomber' ? 350 : 200;
+  const pts = enemy.type === 'su33' || enemy.type === 'su57' ? 500 : enemy.type === 'bomber' ? 350 : 250;
   game.score += pts;
   game.kills += 1;
 
@@ -1208,7 +1867,7 @@ function destroyEnemy(enemy) {
   }
 
   if (game.player.lockedTarget === enemy) {
-    game.player.lockedTarget = game.enemies[0] || null;
+    game.player.lockedTarget = game.groundTargets[0] || game.enemies[0] || null;
     game.player.lockProgress = 0;
   }
 
@@ -1222,45 +1881,143 @@ function destroyEnemy(enemy) {
   sound.speakRadio('WINGMAN ICEMAN', quote, false);
 }
 
-// ==========================================
-// UPDATE MODE 1: AIR-TO-AIR COMBAT AI & SEEKER
-// ==========================================
-function updateCombatMode(dt) {
-  const p = game.player;
+function destroyGroundTarget(gt) {
+  const idx = game.groundTargets.indexOf(gt);
+  if (idx === -1) return;
 
-  // Check if Wave Cleared
-  if (game.enemies.length === 0) {
-    sound.updateSeekerTone('off');
-    if (game.wavePauseTimer === 0) {
-      const nextWave = game.wave + 1;
-      if (nextWave > saveData.bestWave) {
-        saveData.bestWave = nextWave;
-        writeSaveData(saveData);
-      }
-      p.missiles = p.config.missiles;
-      p.flares = p.config.flares;
-      p.hull = Math.min(100, p.hull + 35);
-      sound.speakRadio(
-        'AWACS SKYEYE',
-        `Wave ${game.wave} cleared! Missiles & flares replenished, hull repaired. Wave ${nextWave} inbound!`,
-        true
-      );
-    }
-    game.wavePauseTimer += dt;
-    if (game.wavePauseTimer > 3.2) {
-      game.wavePauseTimer = 0;
-      spawnCombatWave(game.wave + 1);
-    }
-    return;
+  spawnExplosion(gt.pos, gt.targetType === 'destroyer' || gt.targetType === 'bunker' ? 3.2 : 2.2, 0xff8811);
+  scene.remove(gt.mesh);
+  game.groundTargets.splice(idx, 1);
+
+  game.score += 450;
+  game.kills += 1;
+  if (game.score > saveData.bestScore) {
+    saveData.bestScore = game.score;
+    writeSaveData(saveData);
   }
 
-  // Update Enemy AI
+  if (game.player.lockedTarget === gt) {
+    game.player.lockedTarget = game.groundTargets[0] || game.enemies[0] || null;
+    game.player.lockProgress = 0;
+  }
+
+  sound.speakRadio(
+    'AWACS SKYEYE',
+    `Direct hit! ${gt.label} destroyed! (${game.groundTargets.length} strike targets remaining)`,
+    true
+  );
+}
+
+// ==========================================
+// UPDATE ENEMY AI & SEEKER LOCK HELPER
+// ==========================================
+function updateEnemiesAndSeeker(dt) {
+  const p = game.player;
+
+  // Update Moving Naval Targets & Ground SAM Batteries
+  for (const gt of game.groundTargets) {
+    if (gt.vel.lengthSq() > 0.01) {
+      gt.pos.addScaledVector(gt.vel, dt);
+      gt.mesh.position.set(gt.pos.x, 0, gt.pos.z);
+    }
+    if (gt.canFireSam) {
+      gt.samTimer -= dt;
+      const distToP = gt.pos.distanceTo(p.pos);
+      if (gt.samTimer <= 0 && distToP < 2300 && p.pos.y > 75) {
+        gt.samTimer = 7.5 + Math.random() * 4.0;
+        fireEnemyMissile(
+          gt.pos.clone().add(new THREE.Vector3(0, 14, 0)),
+          new THREE.Quaternion(),
+          `SAM Launch from ${gt.label}! Press [G] for flares or dive low!`
+        );
+      }
+    }
+  }
+
+  // Update Friendly AI Wingman "ROOSTER" (if active in Special Op 3)
+  if (game.wingman) {
+    const w = game.wingman;
+    const targetEnemy = game.enemies[0];
+    let desiredPoint;
+    if (targetEnemy) {
+      desiredPoint = targetEnemy.pos.clone().add(new THREE.Vector3(0, 15, 65));
+    } else {
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat);
+      const back = new THREE.Vector3(0, 0, 1).applyQuaternion(p.quat);
+      desiredPoint = p.pos.clone().addScaledVector(right, 34).addScaledVector(back, 22);
+    }
+
+    const desiredDir = desiredPoint.sub(w.pos).normalize();
+    const curDir = w.vel.clone().normalize();
+    curDir.lerp(desiredDir, Math.min(1, 1.85 * dt)).normalize();
+    w.vel.copy(curDir).multiplyScalar(w.speedKts * 0.5144);
+    w.pos.addScaledVector(w.vel, dt);
+    w.mesh.position.copy(w.pos);
+    w.mesh.lookAt(w.pos.clone().add(curDir));
+    w.quat.copy(w.mesh.quaternion);
+    updateJetVisuals(w.mesh, w.speedKts, 0.85, false, 0.15, 0);
+
+    // Wingman Rooster fires support missiles at enemies!
+    if (targetEnemy) {
+      w.missileTimer -= dt;
+      if (w.missileTimer <= 0 && w.pos.distanceTo(targetEnemy.pos) < 1600) {
+        w.missileTimer = 7.5;
+        sound.speakRadio('WINGMAN ROOSTER', `Rooster engaging ${targetEnemy.label}—Fox Two!`, false);
+        const mGrp = new THREE.Group();
+        mGrp.add(
+          new THREE.Mesh(
+            new THREE.CylinderGeometry(0.14, 0.14, 3.0, 8).rotateX(Math.PI / 2),
+            new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+          )
+        );
+        mGrp.position.copy(w.pos);
+        scene.add(mGrp);
+        game.missiles.push({
+          mesh: mGrp,
+          pos: w.pos.clone(),
+          vel: curDir.clone().multiplyScalar(370),
+          quat: w.quat.clone(),
+          target: targetEnemy,
+          isPlayer: true,
+          speedMps: 375,
+          turnRate: 3.2,
+          ttl: 6.0
+        });
+      }
+    }
+  }
+
+  // Update Enemy Aircraft AI
   for (const e of game.enemies) {
     const toPlayer = p.pos.clone().sub(e.pos);
     const dist = toPlayer.length();
 
-    const targetPoint = p.pos.clone();
-    if (dist < 260) {
+    let targetPoint = p.pos.clone();
+    if (e.antiShipRole) {
+      // In Special Op 2 (Defend the Fleet), Tu-22M Bombers head straight for USS Nimitz!
+      targetPoint = new THREE.Vector3(carrierGroup.position.x, 190, carrierGroup.position.z);
+      const distToCarrier = Math.hypot(e.pos.x - carrierGroup.position.x, e.pos.z - carrierGroup.position.z);
+      if (distToCarrier < 880) {
+        e.missileTimer -= dt * 1.4;
+        if (e.missileTimer <= 0) {
+          e.missileTimer = 6.5;
+          game.carrierHp = Math.max(0, game.carrierHp - 14);
+          spawnExplosion(
+            new THREE.Vector3(
+              carrierGroup.position.x + (Math.random() - 0.5) * 20,
+              22,
+              carrierGroup.position.z + (Math.random() - 0.5) * 90
+            ),
+            2.2
+          );
+          sound.speakRadio(
+            'AIR BOSS TOWER',
+            `Warning! Bombers hit CVN-68 flight deck! Carrier integrity at ${game.carrierHp}%!`,
+            true
+          );
+        }
+      }
+    } else if (dist < 260) {
       targetPoint.add(new THREE.Vector3(280, 90, 280));
     }
     if (e.pos.y < 140) {
@@ -1280,7 +2037,6 @@ function updateCombatMode(dt) {
     e.quat.copy(e.mesh.quaternion);
     updateJetVisuals(e.mesh, e.speedKts, 0.85, false, 0.2, 0);
 
-    // Enemy Gun Burst when aligned at medium-close range
     e.gunTimer -= dt;
     if (e.gunTimer <= 0 && dist < 680 && curDir.dot(toPlayer.clone().normalize()) > 0.92) {
       e.gunTimer = 1.4 + Math.random() * 1.2;
@@ -1297,27 +2053,29 @@ function updateCombatMode(dt) {
       });
     }
 
-    // Enemy Missile Launch
-    e.missileTimer -= dt;
-    if (e.missileTimer <= 0) {
-      e.missileTimer = 8.5 + Math.random() * 5.0;
-      fireEnemyMissile(e);
+    if (!e.antiShipRole) {
+      e.missileTimer -= dt;
+      if (e.missileTimer <= 0 && dist < 2000 && dist > 180 && curDir.dot(toPlayer.clone().normalize()) > 0.65) {
+        e.missileTimer = 8.5 + Math.random() * 5.0;
+        fireEnemyMissile(e.pos, e.quat);
+      }
     }
   }
 
-  // Player AIM-9X Seeker Lock-On Calculation
+  // Player Seeker Lock-On Calculation (locks onto both Air Enemies and Ground Targets!)
   const playerForward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat).normalize();
   let bestCandidate = null;
   let bestDot = 0.84;
 
-  for (const e of game.enemies) {
-    const toE = e.pos.clone().sub(p.pos);
-    const dist = toE.length();
-    if (dist < 2600) {
-      const dot = playerForward.dot(toE.normalize());
+  const allTargets = [...game.enemies, ...game.groundTargets];
+  for (const t of allTargets) {
+    const toT = t.pos.clone().sub(p.pos);
+    const dist = toT.length();
+    if (dist < 2800) {
+      const dot = playerForward.dot(toT.normalize());
       if (dot > bestDot) {
         bestDot = dot;
-        bestCandidate = e;
+        bestCandidate = t;
       }
     }
   }
@@ -1331,23 +2089,274 @@ function updateCombatMode(dt) {
     sound.updateSeekerTone(p.lockProgress >= 1.0 ? 'locked' : 'seeking');
   } else {
     p.lockProgress = Math.max(0, p.lockProgress - dt * 1.5);
-    if (!p.lockedTarget || !game.enemies.includes(p.lockedTarget)) {
-      p.lockedTarget = game.enemies[0] || null;
+    if (!p.lockedTarget || !allTargets.includes(p.lockedTarget)) {
+      p.lockedTarget = allTargets[0] || null;
     }
     sound.updateSeekerTone('off');
   }
 }
 
 // ==========================================
-// UPDATE MODE 2: CARRIER APPROACH, LSO & WIRE TRAP
+// UPDATE MODE 1: WAVE SURVIVAL
+// ==========================================
+function updateCombatMode(dt) {
+  const p = game.player;
+
+  if (game.enemies.length === 0) {
+    sound.updateSeekerTone('off');
+    if (game.wavePauseTimer === 0) {
+      const nextWave = game.wave + 1;
+      if (nextWave > saveData.bestWave) {
+        saveData.bestWave = nextWave;
+        writeSaveData(saveData);
+      }
+      p.missiles = p.config.missiles;
+      p.bombs = p.config.bombs || 6;
+      p.flares = p.config.flares;
+      p.hull = Math.min(100, p.hull + 35);
+      sound.speakRadio(
+        'AWACS SKYEYE',
+        `Wave ${game.wave} cleared! Ordnance & flares replenished, hull repaired. Wave ${nextWave} inbound!`,
+        true
+      );
+    }
+    game.wavePauseTimer += dt;
+    if (game.wavePauseTimer > 3.2) {
+      game.wavePauseTimer = 0;
+      spawnCombatWave(game.wave + 1);
+    }
+    return;
+  }
+
+  updateEnemiesAndSeeker(dt);
+}
+
+// ==========================================
+// UPDATE MODE 2: AIR-TO-GROUND BOMBING STRIKES
+// ==========================================
+function updateStrikeMission(dt) {
+  const p = game.player;
+  updateEnemiesAndSeeker(dt);
+
+  // Strike 1 Special Rule: 850 FT Radar Hard Deck during Phase 1 (before Uranium Bunker is destroyed)
+  if (game.strikeMission === 1 && game.missionPhase === 1) {
+    const hasBunker = game.groundTargets.some((g) => g.targetType === 'bunker');
+    if (hasBunker) {
+      const altFt = p.pos.y * 3.28084;
+      if (altFt > 850) {
+        game.radarCeilingTimer += dt;
+        if (game.radarCeilingTimer > 2.2) {
+          game.radarCeilingTimer = 0;
+          fireEnemyMissile(
+            new THREE.Vector3(-2500, 95, -1700),
+            new THREE.Quaternion(),
+            'Above 850 FT Hard Deck! Enemy Radar SAM Launch! Dive below 850 feet!'
+          );
+        }
+      } else {
+        game.radarCeilingTimer = Math.max(0, game.radarCeilingTimer - dt);
+      }
+    } else {
+      // Bunker Destroyed! Trigger Phase 2: 2 Su-57 Felon Interceptors scramble!
+      game.missionPhase = 2;
+      spawnEnemyPlane('su57', new THREE.Vector3(p.pos.x - 450, 480, p.pos.z - 1200), 'SU-57 FELON INTERCEPTOR');
+      spawnEnemyPlane('su57', new THREE.Vector3(p.pos.x + 450, 520, p.pos.z - 1250), 'SU-57 FELON INTERCEPTOR');
+      game.player.lockedTarget = game.enemies[0];
+      sound.speakRadio(
+        'TOPGUN MAVERICK',
+        `Miracle Two—Bullseye on the Uranium Bunker!! Two Su-57 Felons scrambling onto our six—splash the Felons to complete the mission!`,
+        true
+      );
+    }
+  }
+
+  // Check Victory Conditions for Strike Missions
+  if (game.strikeMission === 1 && game.missionPhase === 2 && game.enemies.length === 0) {
+    finishStrikeVictory(
+      1,
+      'URANIUM BUNKER & FELONS DESTROYED',
+      'Textbook Top Gun canyon run! Reactor destroyed and scrambling Su-57 Felons splashed!'
+    );
+  } else if (game.strikeMission === 2 && game.groundTargets.length === 0) {
+    finishStrikeVictory(
+      2,
+      'ISLAND SEAD COMPLETE',
+      'All 6 enemy Radar Domes, S-400 SAM Batteries, and Fuel Depots obliterated!'
+    );
+  } else if (game.strikeMission === 3 && game.groundTargets.length === 0) {
+    finishStrikeVictory(
+      3,
+      'CRIMSON FLEET SUNK',
+      'All 4 enemy guided-missile warships and the Battlecruiser Kirov sent to the bottom!'
+    );
+  }
+}
+
+function finishStrikeVictory(strikeId, title, subtitle) {
+  const elapsedSec = Math.round(performance.now() * 0.001 - game.missionStartTime);
+  saveData.strikeGrades[strikeId] = 'COMPLETED ★';
+  writeSaveData(saveData);
+
+  showDebriefModal({
+    badge: `STRIKE MISSION ${strikeId} VICTORY`,
+    title,
+    subtitle,
+    metrics: [
+      ['AIRCRAFT', game.player.config.shortName || game.player.config.name],
+      ['MISSION TIME', `${elapsedSec} SEC`],
+      ['TARGETS DESTROYED', `${game.kills}`],
+      ['COMBAT SCORE', `${game.score} PTS`]
+    ],
+    canAdvance: strikeId < 3,
+    advanceType: 'STRIKE'
+  });
+}
+
+// ==========================================
+// UPDATE MODE 3: SPECIAL OPERATIONS MISSIONS
+// ==========================================
+function updateSpecOpsMission(dt) {
+  const p = game.player;
+
+  if (game.specopsMission === 1) {
+    // Op 1: Mach 10 Canyon Ring Time-Trial
+    sound.updateSeekerTone('off');
+    const activeRing = game.skyRings[game.ringIndex];
+    if (activeRing) {
+      activeRing.mesh.rotation.z += dt * 1.5;
+      if (p.pos.distanceTo(activeRing.pos) < 44) {
+        activeRing.cleared = true;
+        scene.remove(activeRing.mesh);
+        game.ringIndex += 1;
+        game.score += 250;
+        p.speedKts = Math.min(p.config.maxSpeedKts * 1.08, p.speedKts + 45);
+        sound.playCheckpointChime();
+
+        if (game.ringIndex >= game.totalRings) {
+          const elapsed = +(performance.now() * 0.001 - game.missionStartTime).toFixed(1);
+          const grade = elapsed < 65 ? 'GOLD MACH 10 ★' : elapsed < 85 ? 'SILVER ACE' : 'QUALIFIED';
+          saveData.specopsGrades[1] = grade;
+          writeSaveData(saveData);
+          showDebriefModal({
+            badge: 'SPECIAL OP 1: CANYON TIME-TRIAL COMPLETE',
+            title: grade,
+            subtitle: `All 16 supersonic canyon gates cleared in ${elapsed} seconds!`,
+            metrics: [
+              ['GATES CLEARED', `${game.totalRings} / ${game.totalRings}`],
+              ['COURSE TIME', `${elapsed} SEC`],
+              ['TOP SPEED', `${Math.round(p.speedKts)} KTS`],
+              ['SCORE', `${game.score} PTS`]
+            ],
+            canAdvance: true,
+            advanceType: 'SPECOPS'
+          });
+        }
+      }
+    }
+  } else if (game.specopsMission === 2) {
+    // Op 2: Defend the Fleet (Carrier Escort)
+    updateEnemiesAndSeeker(dt);
+
+    if (game.carrierHp <= 0) {
+      showDebriefModal({
+        badge: 'FLEET DEFENSE FAILED',
+        title: 'USS NIMITZ HEAVILY DAMAGED',
+        subtitle: 'Enemy Tu-22M Backfire Bombers overwhelmed the carrier defenses.',
+        metrics: [
+          ['WAVE REACHED', `WAVE ${game.wave} / 3`],
+          ['BANDITS SPLASHED', `${game.kills}`],
+          ['CARRIER INTEGRITY', '0%'],
+          ['SCORE', `${game.score} PTS`]
+        ],
+        canAdvance: false
+      });
+      return;
+    }
+
+    if (game.enemies.length === 0) {
+      if (game.wave < 3) {
+        const nextW = game.wave + 1;
+        p.missiles = p.config.missiles;
+        p.flares = p.config.flares;
+        spawnFleetDefenseWave(nextW);
+        sound.speakRadio(
+          'AIR BOSS TOWER',
+          `Bomber Wave ${nextW - 1} splashed! Missiles reloaded—Wave ${nextW} of 3 inbound now!`,
+          true
+        );
+      } else {
+        saveData.specopsGrades[2] = `SAVED (${game.carrierHp}%) ★`;
+        writeSaveData(saveData);
+        showDebriefModal({
+          badge: 'SPECIAL OP 2: FLEET DEFENDED',
+          title: 'USS NIMITZ SAVED!',
+          subtitle: 'All 3 waves of enemy strike bombers intercepted before they could sink CVN-68!',
+          metrics: [
+            ['CARRIER INTEGRITY', `${game.carrierHp}%`],
+            ['BOMBERS SPLASHED', `${game.kills}`],
+            ['WAVES CLEARED', '3 / 3'],
+            ['COMBAT SCORE', `${game.score} PTS`]
+          ],
+          canAdvance: true,
+          advanceType: 'SPECOPS'
+        });
+      }
+    }
+  } else if (game.specopsMission === 3) {
+    // Op 3: Maverick & Rooster Wingman Furball + Carrier Trap!
+    updateEnemiesAndSeeker(dt);
+
+    if (game.missionPhase === 1 && game.enemies.length === 0) {
+      game.missionPhase = 2;
+      rebuildGlideSlopeBoxes(false);
+      glideBoxesGroup.visible = game.showGlideBoxes;
+      sound.speakRadio(
+        'LSO PADDLES',
+        `All Crimson Squadron bandits splashed! Return to USS Nimitz, lower gear [L], and trap on the flight deck to finish the sortie!`,
+        true
+      );
+    }
+
+    if (game.missionPhase === 2) {
+      updateCarrierApproach(dt);
+    }
+  }
+}
+
+function finishSpecOpsWingmanSortie() {
+  const m = game.player.TouchdownMetrics || { wire: 3, speedKts: 138, sinkRateFps: 10 };
+  saveData.specopsGrades[3] = `TOPGUN #${m.wire} WIRE ★`;
+  writeSaveData(saveData);
+
+  showDebriefModal({
+    badge: 'SPECIAL OP 3: WINGMAN SORTIE COMPLETE',
+    title: 'TOPGUN TROPHY EARNED!',
+    subtitle: `Crimson Squadron defeated alongside Wingman Rooster & trapped on the #${m.wire} wire!`,
+    metrics: [
+      ['BANDITS SPLASHED', `${game.kills}`],
+      ['WINGMAN STATUS', 'ROOSTER SURVIVED'],
+      ['CARRIER RECOVERY', `#${m.wire} WIRE (${m.speedKts} KTS)`],
+      ['TOTAL SCORE', `${game.score + 500} PTS`]
+    ],
+    canAdvance: false
+  });
+}
+
+// ==========================================
+// UPDATE MODE 4: CARRIER APPROACH, LSO & WIRE TRAP
 // ==========================================
 function updateCarrierApproach(dt) {
   const p = game.player;
   const stage = CARRIER_STAGES[game.carrierStage] || CARRIER_STAGES[1];
 
-  const relX = p.pos.x - carrierGroup.position.x;
+  // Transform player world position into carrier-local coordinates (handles moving & S-turning carrier!)
+  const localPos = p.pos.clone().sub(carrierGroup.position);
+  if (carrierGroup.rotation.y !== 0) {
+    localPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), -carrierGroup.rotation.y);
+  }
+  const relX = localPos.x;
   const relY = p.pos.y - carrierGroup.userData.deckY;
-  const relZ = p.pos.z - carrierGroup.position.z;
+  const relZ = localPos.z;
 
   if (stage.overheadBreak && !game.breakPassedBow && relZ < -180) {
     game.breakPassedBow = true;
@@ -1368,24 +2377,27 @@ function updateCarrierApproach(dt) {
     carrierGroup.userData.meatballLight3D.position.y = ballOffsetY;
 
     const now = performance.now();
-    if (distFromWire3 < 1300 && distFromWire3 > 95 && now - game.lsoLastCallTime > 4400) {
+    // Stage 9 ("Broken Meatball") gives more frequent LSO talk-down calls (every 2.4s)
+    const callInterval = stage.meatballOut ? 2400 : 4400;
+    if (distFromWire3 < 1400 && distFromWire3 > 85 && now - game.lsoLastCallTime > callInterval) {
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat);
-      if (forward.z < -0.7) {
+      if (forward.z < -0.5) {
         game.lsoLastCallTime = now;
+        const distMeters = Math.round(distFromWire3);
         if (!p.gearDown && distFromWire3 < 950) {
           sound.speakRadio('LSO PADDLES', 'Check gear! Press L to drop landing gear and tailhook!', true);
-        } else if (glideErrorDeg < -0.95) {
-          sound.speakRadio('LSO PADDLES', "You're a little low—add power, power!", false);
-        } else if (glideErrorDeg > 1.15) {
-          sound.speakRadio('LSO PADDLES', "You're high on the glide slope—ease throttle.", false);
-        } else if (Math.abs(relX) > 10) {
+        } else if (glideErrorDeg < -0.85) {
+          sound.speakRadio('LSO PADDLES', `${distMeters}M out—you're low, add power, power!`, false);
+        } else if (glideErrorDeg > 1.05) {
+          sound.speakRadio('LSO PADDLES', `${distMeters}M out—you're high on glide slope, ease throttle.`, false);
+        } else if (Math.abs(relX) > 9) {
           sound.speakRadio(
             'LSO PADDLES',
-            relX > 0 ? 'Come left for centerline!' : 'Come right for centerline!',
+            relX > 0 ? `${distMeters}M out—come left for centerline!` : `${distMeters}M out—come right for centerline!`,
             false
           );
         } else {
-          sound.speakRadio('LSO PADDLES', 'On glide slope, looking good—hold the ball!', false);
+          sound.speakRadio('LSO PADDLES', `${distMeters}M out—on glide slope and centerline, hold ${p.config.idealApproachKts} knots!`, false);
         }
       }
     }
@@ -1411,7 +2423,7 @@ function updateCarrierApproach(dt) {
       return;
     }
 
-    if (p.gearDown && relZ >= 38 && relZ <= 132 && p.speedKts < 195) {
+    if (p.gearDown && relZ >= 38 && relZ <= 132 && p.speedKts < 198) {
       const wires = carrierGroup.userData.wirePositionsZ;
       let bestWire = 3;
       let bestDist = Infinity;
@@ -1435,7 +2447,7 @@ function updateCarrierApproach(dt) {
       sound.playWireTrap();
       sound.speakRadio(
         'LSO PADDLES',
-        `Trap! Caught the number ${bestWire} wire! Nice work, ${saveData.callsign}!`,
+        `Trap! Caught the number ${bestWire} wire! Sierra Hotel pass, ${saveData.callsign}!`,
         true
       );
     } else {
@@ -1494,19 +2506,20 @@ function finishCarrierTrap() {
       ['SINK RATE', `${m.sinkRateFps} FT/SEC`],
       ['CENTERLINE OFFSET', `${m.centerlineOffsetM} M`]
     ],
-    canAdvance: game.carrierStage < 5
+    canAdvance: game.carrierStage < 10,
+    advanceType: 'CARRIER'
   });
 }
 
 function finishCombatGameOver(reason) {
   showDebriefModal({
-    badge: 'AIR-TO-AIR COMBAT DEBRIEF',
-    title: `REACHED WAVE ${game.wave}`,
-    subtitle: `${reason} • Bandits Splashed: ${game.kills}`,
+    badge: 'MISSION DEBRIEF',
+    title: game.state === 'COMBAT' ? `REACHED WAVE ${game.wave}` : 'MISSION ABORTED',
+    subtitle: `${reason} • Targets Destroyed: ${game.kills}`,
     metrics: [
       ['PILOT CALLSIGN', saveData.callsign],
-      ['WAVE REACHED', `WAVE ${game.wave}`],
-      ['BANDITS SPLASHED', `${game.kills}`],
+      ['AIRCRAFT', game.player.config.shortName || game.player.config.name],
+      ['TARGETS DESTROYED', `${game.kills}`],
       ['COMBAT SCORE', `${game.score} PTS`]
     ],
     canAdvance: false
@@ -1539,7 +2552,6 @@ function updateCamera(dt) {
     p.mesh.visible = true;
     cockpitInteriorGroup.visible = false;
     if (game.state === 'CARRIER') {
-      // LSO Platform Camera on Port Quarter of the Flight Deck watching the approach & trap!
       camera.position.set(
         carrierGroup.position.x - 21.0,
         carrierGroup.userData.deckY + 3.4,
@@ -1547,7 +2559,6 @@ function updateCamera(dt) {
       );
       camera.lookAt(p.pos);
     } else {
-      // Tactical Flyby / Wingman Action Camera in Combat Mode
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat);
       const right = new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat);
       const up = new THREE.Vector3(0, 1, 0).applyQuaternion(p.quat);
@@ -1600,7 +2611,7 @@ function renderAvionicsHUD() {
   const h = canvasHUD.height;
   ctxHUD.clearRect(0, 0, w, h);
 
-  if (game.state !== 'COMBAT' && game.state !== 'CARRIER') return;
+  if (game.state === 'HANGAR' || game.state === 'DEBRIEF') return;
 
   const p = game.player;
   const cx = w * 0.5;
@@ -1638,6 +2649,46 @@ function renderAvionicsHUD() {
     ctxHUD.moveTo(vx, vy - 7);
     ctxHUD.lineTo(vx, vy - 14);
     ctxHUD.stroke();
+  }
+
+  // 2B. CCIP (Continuously Computed Impact Point) Air-to-Ground Bombing Pipper!
+  if ((game.state === 'STRIKE' || game.groundTargets.length > 0) && p.bombs > 0) {
+    const impactWorld = computeBombImpactPoint(p.pos, p.vel, 10.0);
+    const ccipScr = projectWorldToScreen(impactWorld);
+    if (ccipScr.inFront) {
+      const pipX = THREE.MathUtils.clamp(ccipScr.x, 60, w - 60);
+      const pipY = THREE.MathUtils.clamp(ccipScr.y, 60, h - 60);
+
+      let overTarget = false;
+      for (const gt of game.groundTargets) {
+        if (impactWorld.distanceTo(gt.pos) < 88) {
+          overTarget = true;
+          break;
+        }
+      }
+
+      ctxHUD.save();
+      ctxHUD.strokeStyle = overTarget ? '#ff3b47' : '#f5a623';
+      ctxHUD.fillStyle = ctxHUD.strokeStyle;
+      ctxHUD.lineWidth = overTarget ? 2.4 : 1.6;
+      ctxHUD.setLineDash([5, 4]);
+      ctxHUD.beginPath();
+      ctxHUD.moveTo(cx, cy + 8);
+      ctxHUD.lineTo(pipX, pipY);
+      ctxHUD.stroke();
+      ctxHUD.setLineDash([]);
+
+      ctxHUD.beginPath();
+      ctxHUD.arc(pipX, pipY, 16, 0, Math.PI * 2);
+      ctxHUD.stroke();
+      ctxHUD.beginPath();
+      ctxHUD.arc(pipX, pipY, 3, 0, Math.PI * 2);
+      ctxHUD.fill();
+
+      ctxHUD.font = '700 11px "JetBrains Mono", monospace';
+      ctxHUD.fillText(overTarget ? 'DROP JDAM [V]!' : 'CCIP [V]', pipX - 34, pipY + 28);
+      ctxHUD.restore();
+    }
   }
 
   // 3. Pitch Ladder & Artificial Horizon
@@ -1687,10 +2738,29 @@ function renderAvionicsHUD() {
   ctxHUD.font = '500 11px "JetBrains Mono", monospace';
   ctxHUD.fillText('FT', cx + 222, cy + 5);
 
+  // Strike 1 Canyon Radar Hard Deck Warning Indicator
+  if (game.state === 'STRIKE' && game.strikeMission === 1 && game.missionPhase === 1) {
+    ctxHUD.fillStyle = altFt > 850 ? '#ff3b47' : '#38bdf8';
+    ctxHUD.font = '700 12px "JetBrains Mono", monospace';
+    ctxHUD.fillText(
+      altFt > 850 ? 'WARNING: ABOVE 850 FT RADAR CEILING — DIVE!' : 'RADAR CEILING: 850 FT (SAFE)',
+      cx - 115,
+      cy - 162
+    );
+  }
+
+  // Special Op 2 Carrier Fleet Integrity Bar
+  if (game.state === 'SPECOPS' && game.specopsMission === 2) {
+    ctxHUD.fillStyle = game.carrierHp < 40 ? '#ff3b47' : '#38bdf8';
+    ctxHUD.font = '700 12px "JetBrains Mono", monospace';
+    ctxHUD.fillText(`USS NIMITZ INTEGRITY: ${game.carrierHp}%`, cx - 88, cy - 162);
+  }
+
   // 5. Compass Heading Tape at Top
   const hdgDeg = ((Math.round(THREE.MathUtils.radToDeg(-p.yaw)) % 360) + 360) % 360;
   ctxHUD.strokeRect(cx - 32, 54, 64, 24);
   ctxHUD.font = '700 13px "JetBrains Mono", monospace';
+  ctxHUD.fillStyle = '#24f07d';
   ctxHUD.fillText(`HDG ${String(hdgDeg).padStart(3, '0')}`, cx - 27, 71);
 
   // 6. Tactical Radar Minimap
@@ -1723,14 +2793,45 @@ function renderAvionicsHUD() {
     ctxHUD.fillRect(radarX + cRx - 3, radarY + cRz - 5, 6, 10);
   }
 
-  // Enemies on Radar & 3D Target Reticles (Mode 1: Combat)
-  if (game.state === 'COMBAT') {
+  // Friendly AI Wingman "ROOSTER" Reticle
+  if (game.wingman) {
+    const wScr = projectWorldToScreen(game.wingman.pos);
+    if (wScr.inFront && wScr.x > 25 && wScr.x < w - 25 && wScr.y > 25 && wScr.y < h - 25) {
+      ctxHUD.strokeStyle = '#38bdf8';
+      ctxHUD.fillStyle = '#38bdf8';
+      ctxHUD.strokeRect(wScr.x - 14, wScr.y - 14, 28, 28);
+      ctxHUD.font = '600 10px "JetBrains Mono", monospace';
+      ctxHUD.fillText('ALLY ROOSTER', wScr.x - 32, wScr.y - 18);
+    }
+  }
+
+  // Next Sky Ring Gate Indicator (Special Op 1)
+  if (game.state === 'SPECOPS' && game.specopsMission === 1 && game.skyRings[game.ringIndex]) {
+    const nextRing = game.skyRings[game.ringIndex];
+    const rScr = projectWorldToScreen(nextRing.pos);
+    const distM = Math.round(p.pos.distanceTo(nextRing.pos));
+    if (rScr.inFront) {
+      const rx = THREE.MathUtils.clamp(rScr.x, 45, w - 45);
+      const ry = THREE.MathUtils.clamp(rScr.y, 45, h - 45);
+      ctxHUD.strokeStyle = '#38bdf8';
+      ctxHUD.fillStyle = '#38bdf8';
+      ctxHUD.beginPath();
+      ctxHUD.arc(rx, ry, 22, 0, Math.PI * 2);
+      ctxHUD.stroke();
+      ctxHUD.font = '700 11px "JetBrains Mono", monospace';
+      ctxHUD.fillText(`GATE ${game.ringIndex + 1}/${game.totalRings} (${distM}M)`, rx - 48, ry - 28);
+    }
+  }
+
+  // Air Enemies & Ground Strike Targets on Radar & 3D HUD Reticles
+  const allTargets = [...game.enemies, ...game.groundTargets];
+  if (allTargets.length > 0) {
     ctxHUD.strokeStyle = 'hsla(146, 86%, 54%, 0.35)';
     ctxHUD.beginPath();
     ctxHUD.arc(cx, cy, 132, 0, Math.PI * 2);
     ctxHUD.stroke();
 
-    for (const e of game.enemies) {
+    for (const e of allTargets) {
       const rel = e.pos.clone().sub(p.pos);
       const rx = (rel.x * cosY - rel.z * sinY) / 45;
       const rz = (rel.x * sinY + rel.z * cosY) / 45;
@@ -1738,7 +2839,7 @@ function renderAvionicsHUD() {
       const clampedRx = rDist > radarR - 5 ? (rx / rDist) * (radarR - 5) : rx;
       const clampedRz = rDist > radarR - 5 ? (rz / rDist) * (radarR - 5) : rz;
 
-      ctxHUD.fillStyle = e === p.lockedTarget ? '#ff3b47' : '#f5a623';
+      ctxHUD.fillStyle = e === p.lockedTarget ? '#ff3b47' : e.isGroundTarget ? '#38bdf8' : '#f5a623';
       ctxHUD.beginPath();
       ctxHUD.arc(radarX + clampedRx, radarY + clampedRz, 3.5, 0, Math.PI * 2);
       ctxHUD.fill();
@@ -1749,17 +2850,35 @@ function renderAvionicsHUD() {
 
       if (scr.inFront && scr.x >= 20 && scr.x <= w - 20 && scr.y >= 20 && scr.y <= h - 20) {
         const isFullLock = isLockedTarget && p.lockProgress >= 1.0;
-        ctxHUD.strokeStyle = isFullLock ? '#ff3b47' : isLockedTarget ? '#f5a623' : '#24f07d';
+        ctxHUD.strokeStyle = isFullLock
+          ? '#ff3b47'
+          : isLockedTarget
+          ? '#f5a623'
+          : e.isGroundTarget
+          ? '#38bdf8'
+          : '#24f07d';
         ctxHUD.fillStyle = ctxHUD.strokeStyle;
         ctxHUD.lineWidth = isLockedTarget ? 2.0 : 1.4;
 
-        ctxHUD.strokeRect(scr.x - 18, scr.y - 18, 36, 36);
+        if (e.isGroundTarget) {
+          // Diamond target box for Ground / Naval Strike Targets
+          ctxHUD.beginPath();
+          ctxHUD.moveTo(scr.x, scr.y - 22);
+          ctxHUD.lineTo(scr.x + 22, scr.y);
+          ctxHUD.lineTo(scr.x, scr.y + 22);
+          ctxHUD.lineTo(scr.x - 22, scr.y);
+          ctxHUD.closePath();
+          ctxHUD.stroke();
+        } else {
+          ctxHUD.strokeRect(scr.x - 18, scr.y - 18, 36, 36);
+        }
+
         ctxHUD.font = '600 11px "JetBrains Mono", monospace';
-        const labelX = THREE.MathUtils.clamp(scr.x - 28, 24, w - 165);
-        const labelY = THREE.MathUtils.clamp(scr.y - 24, 34, h - 42);
+        const labelX = THREE.MathUtils.clamp(scr.x - 32, 24, w - 185);
+        const labelY = THREE.MathUtils.clamp(scr.y - 26, 34, h - 42);
         ctxHUD.fillText(`${e.label} ${distMeters}M`, labelX, labelY);
 
-        ctxHUD.fillRect(scr.x - 18, scr.y + 22, 36 * (e.hp / e.maxHp), 3);
+        ctxHUD.fillRect(scr.x - 18, scr.y + 24, 36 * (e.hp / e.maxHp), 3);
 
         if (isLockedTarget) {
           if (p.lockProgress > 0) {
@@ -1769,11 +2888,11 @@ function renderAvionicsHUD() {
           }
           if (isFullLock) {
             ctxHUD.font = '700 12px "JetBrains Mono", monospace';
-            const shootX = THREE.MathUtils.clamp(scr.x - 30, 24, w - 95);
-            ctxHUD.fillText('SHOOT [F]', shootX, scr.y + 38);
+            const shootX = THREE.MathUtils.clamp(scr.x - 35, 24, w - 125);
+            ctxHUD.fillText(e.isGroundTarget ? 'BOMB [V] / [F]' : 'SHOOT [F]', shootX, scr.y + 40);
           }
 
-          if (distMeters < 1100) {
+          if (!e.isGroundTarget && distMeters < 1100) {
             const bulletSpeed = p.speedKts * 0.5144 + 620;
             const timeOfFlight = distMeters / bulletSpeed;
             const leadPos = e.pos.clone().addScaledVector(e.vel, timeOfFlight);
@@ -1796,7 +2915,6 @@ function renderAvionicsHUD() {
         const arrowR = 132;
         const ax = cx + Math.cos(angle) * arrowR;
         let ay = cy + Math.sin(angle) * arrowR;
-        // Avoid overlapping the KTS / FT airspeed & altitude boxes near cy
         if (Math.abs(ay - cy) < 28) {
           ay = ay < cy ? cy - 32 : cy + 32;
         }
@@ -1811,12 +2929,15 @@ function renderAvionicsHUD() {
   }
 
   // 7. Carrier Approach IFLOLS "Meatball" & AoA Indexer
-  if (game.state === 'CARRIER') {
-    const TouchdownWorld = new THREE.Vector3(
-      carrierGroup.position.x,
-      carrierGroup.userData.deckY,
-      carrierGroup.position.z + 75
-    );
+  const isCarrierApproachActive =
+    game.state === 'CARRIER' || (game.state === 'SPECOPS' && game.specopsMission === 3 && game.missionPhase === 2);
+
+  if (isCarrierApproachActive) {
+    const stage = CARRIER_STAGES[game.carrierStage] || CARRIER_STAGES[1];
+    const TouchdownWorld = new THREE.Vector3(0, carrierGroup.userData.deckY, 75)
+      .applyAxisAngle(new THREE.Vector3(0, 1, 0), carrierGroup.rotation.y)
+      .add(carrierGroup.position);
+
     const tdScr = projectWorldToScreen(TouchdownWorld);
     if (tdScr.inFront) {
       ctxHUD.strokeStyle = '#38bdf8';
@@ -1830,8 +2951,7 @@ function renderAvionicsHUD() {
     const distFromWire3 = p.pos.z - carrierGroup.position.z - 75;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(p.quat);
 
-    // Only display the IFLOLS Meatball when astern of the carrier on final approach (not on upwind break leg)
-    if (distFromWire3 > -25 && forward.z < -0.2) {
+    if (distFromWire3 > -25 && forward.z < -0.2 && !(game.state === 'CARRIER' && stage.meatballOut)) {
       const olsX = cx - 315;
       const olsY = cy - 75;
       const olsW = 48;
@@ -1911,12 +3031,28 @@ function updateTelemetryDOM() {
   if (game.state === 'COMBAT') {
     modeLabel.textContent = 'WAVE SURVIVAL';
     waveVal.textContent = `WAVE ${game.wave} • ${game.score} PTS`;
+  } else if (game.state === 'STRIKE') {
+    modeLabel.textContent = `STRIKE MISSION ${game.strikeMission}`;
+    waveVal.textContent = `${game.groundTargets.length} TGT LEFT • ${game.score} PTS`;
+  } else if (game.state === 'SPECOPS') {
+    modeLabel.textContent = `SPECIAL OP ${game.specopsMission}`;
+    if (game.specopsMission === 1) {
+      waveVal.textContent = `GATE ${game.ringIndex} / ${game.totalRings}`;
+    } else if (game.specopsMission === 2) {
+      waveVal.textContent = `CVN-68: ${game.carrierHp}% • W${game.wave}/3`;
+    } else {
+      waveVal.textContent = game.missionPhase === 1 ? `${game.enemies.length} BANDITS` : 'TRAP ON DECK';
+    }
   } else {
     modeLabel.textContent = 'CARRIER TRAP';
     waveVal.textContent = `STAGE ${game.carrierStage} (${p.config.idealApproachKts} KT TGT)`;
   }
 
   document.getElementById('hud-missile-val').textContent = `${p.missiles} / ${p.config.missiles} [F]`;
+  const bombEl = document.getElementById('hud-bomb-val');
+  if (bombEl) {
+    bombEl.textContent = `${p.bombs} [V]`;
+  }
   document.getElementById('hud-flare-val').textContent = `${p.flares} [G]`;
 }
 
@@ -1941,10 +3077,28 @@ function updateUIOverlays() {
     pill.classList.toggle('active', pill.getAttribute('data-callsign') === saveData.callsign);
   });
 
-  for (let s = 1; s <= 5; s++) {
+  for (let s = 1; s <= 10; s++) {
     const badge = document.getElementById(`badge-stage-${s}`);
     if (badge) {
       const grade = saveData.stageGrades[s];
+      badge.textContent = grade || 'UNFLOWN';
+      badge.className = grade ? 'stage-grade-badge earned' : 'stage-grade-badge';
+    }
+  }
+
+  for (let st = 1; st <= 3; st++) {
+    const badge = document.getElementById(`badge-strike-${st}`);
+    if (badge) {
+      const grade = saveData.strikeGrades[st];
+      badge.textContent = grade || 'UNFLOWN';
+      badge.className = grade ? 'stage-grade-badge earned' : 'stage-grade-badge';
+    }
+  }
+
+  for (let sp = 1; sp <= 3; sp++) {
+    const badge = document.getElementById(`badge-specops-${sp}`);
+    if (badge) {
+      const grade = saveData.specopsGrades[sp];
       badge.textContent = grade || 'UNFLOWN';
       badge.className = grade ? 'stage-grade-badge earned' : 'stage-grade-badge';
     }
@@ -1955,7 +3109,7 @@ function updateUIOverlays() {
     flightUI.classList.add('hidden');
     debriefModal.classList.add('hidden');
     abortBtn.classList.add('hidden');
-  } else if (game.state === 'COMBAT' || game.state === 'CARRIER') {
+  } else if (['COMBAT', 'CARRIER', 'STRIKE', 'SPECOPS'].includes(game.state)) {
     hangarScreen.classList.add('hidden');
     flightUI.classList.remove('hidden');
     debriefModal.classList.add('hidden');
@@ -1963,8 +3117,11 @@ function updateUIOverlays() {
   }
 }
 
-function showDebriefModal({ badge, title, subtitle, metrics, canAdvance }) {
+let lastAdvanceType = 'CARRIER';
+
+function showDebriefModal({ badge, title, subtitle, metrics, canAdvance, advanceType = 'CARRIER' }) {
   game.state = 'DEBRIEF';
+  lastAdvanceType = advanceType;
   sound.updateEngine(0, false);
   sound.updateSeekerTone('off');
   sound.setMusicMode('anthem');
@@ -1973,7 +3130,6 @@ function showDebriefModal({ badge, title, subtitle, metrics, canAdvance }) {
   document.getElementById('debrief-title').textContent = title;
   document.getElementById('debrief-subtitle').textContent = subtitle;
 
-  // Build metrics grid safely using createElement and textContent (zero innerHTML)
   const container = document.getElementById('debrief-metrics');
   container.replaceChildren();
   for (const [label, value] of metrics) {
@@ -2020,7 +3176,6 @@ function saveCallsignFromInput() {
 document.getElementById('btn-save-callsign').addEventListener('click', saveCallsignFromInput);
 document.getElementById('input-pilot-callsign').addEventListener('change', saveCallsignFromInput);
 
-// Top Gun Callsign Preset Pills
 document.querySelectorAll('.preset-pill').forEach((pill) => {
   pill.addEventListener('click', () => {
     sound.init();
@@ -2029,6 +3184,22 @@ document.querySelectorAll('.preset-pill').forEach((pill) => {
     const input = document.getElementById('input-pilot-callsign');
     input.value = cs;
     saveCallsignFromInput();
+  });
+});
+
+// Mission Category Filter Tabs in Hangar Right Column
+document.querySelectorAll('.filter-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    const filter = tab.getAttribute('data-filter') || 'all';
+    document.querySelectorAll('.filter-tab').forEach((t) => t.classList.toggle('active', t === tab));
+    document.querySelectorAll('.mission-category-group').forEach((grp) => {
+      const cat = grp.getAttribute('data-category');
+      if (filter === 'all' || cat === filter) {
+        grp.classList.remove('hidden');
+      } else {
+        grp.classList.add('hidden');
+      }
+    });
   });
 });
 
@@ -2060,12 +3231,30 @@ document.getElementById('btn-launch-combat').addEventListener('click', () => {
   startCombatMode();
 });
 
-document.querySelectorAll('.stage-btn').forEach((btn) => {
+document.querySelectorAll('.carrier-stage-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     saveCallsignFromInput();
     const stg = Number(btn.getAttribute('data-stage')) || 1;
     lastMissionType = 'CARRIER';
     startCarrierStage(stg);
+  });
+});
+
+document.querySelectorAll('.strike-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    saveCallsignFromInput();
+    const strikeId = Number(btn.getAttribute('data-strike')) || 1;
+    lastMissionType = 'STRIKE';
+    startStrikeMission(strikeId);
+  });
+});
+
+document.querySelectorAll('.specops-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    saveCallsignFromInput();
+    const opId = Number(btn.getAttribute('data-specops')) || 1;
+    lastMissionType = 'SPECOPS';
+    startSpecOpsMission(opId);
   });
 });
 
@@ -2098,14 +3287,23 @@ document.getElementById('btn-abort-mission').addEventListener('click', () => {
 document.getElementById('btn-debrief-retry').addEventListener('click', () => {
   if (lastMissionType === 'CARRIER') {
     startCarrierStage(game.carrierStage);
+  } else if (lastMissionType === 'STRIKE') {
+    startStrikeMission(game.strikeMission);
+  } else if (lastMissionType === 'SPECOPS') {
+    startSpecOpsMission(game.specopsMission);
   } else {
     startCombatMode();
   }
 });
 
 document.getElementById('btn-debrief-next').addEventListener('click', () => {
-  const nextStg = Math.min(5, game.carrierStage + 1);
-  startCarrierStage(nextStg);
+  if (lastAdvanceType === 'STRIKE') {
+    startStrikeMission(Math.min(3, game.strikeMission + 1));
+  } else if (lastAdvanceType === 'SPECOPS') {
+    startSpecOpsMission(Math.min(3, game.specopsMission + 1));
+  } else {
+    startCarrierStage(Math.min(10, game.carrierStage + 1));
+  }
 });
 
 document.getElementById('btn-debrief-hangar').addEventListener('click', () => {
@@ -2150,18 +3348,21 @@ window.addEventListener('keydown', (e) => {
       pitchInvertStick ? 'Flight-stick pitch active: Down arrow pulls nose up.' : 'Direct pitch active: Up arrow pitches nose up.',
       true
     );
-  } else if (e.code === 'Escape' && (game.state === 'COMBAT' || game.state === 'CARRIER')) {
+  } else if (e.code === 'Escape' && ['COMBAT', 'CARRIER', 'STRIKE', 'SPECOPS'].includes(game.state)) {
     clearCombatEntities();
     game.state = 'HANGAR';
     game.player.mesh.visible = true;
+    cockpitInteriorGroup.visible = false;
     sound.setMusicMode('anthem');
     setAtmosphere(CARRIER_STAGES[1]);
     updateUIOverlays();
   }
 
-  if (game.state === 'COMBAT' || game.state === 'CARRIER') {
+  if (['COMBAT', 'CARRIER', 'STRIKE', 'SPECOPS'].includes(game.state)) {
     if (e.code === 'KeyF') {
       firePlayerMissile();
+    } else if (e.code === 'KeyV') {
+      dropPlayerBomb();
     } else if (e.code === 'KeyG') {
       deployPlayerFlares();
     } else if (e.code === 'KeyL') {
@@ -2174,10 +3375,13 @@ window.addEventListener('keydown', (e) => {
     } else if (e.code === 'KeyH') {
       game.showGlideBoxes = !game.showGlideBoxes;
       glideBoxesGroup.visible = game.state === 'CARRIER' && game.showGlideBoxes;
-    } else if (e.code === 'KeyT' && game.state === 'COMBAT' && game.enemies.length > 0) {
-      const idx = game.enemies.indexOf(game.player.lockedTarget);
-      game.player.lockedTarget = game.enemies[(idx + 1) % game.enemies.length];
-      game.player.lockProgress = 0;
+    } else if (e.code === 'KeyT') {
+      const allTargets = [...game.groundTargets, ...game.enemies];
+      if (allTargets.length > 0) {
+        const idx = allTargets.indexOf(game.player.lockedTarget);
+        game.player.lockedTarget = allTargets[(idx + 1) % allTargets.length];
+        game.player.lockProgress = 0;
+      }
     }
   }
 });
