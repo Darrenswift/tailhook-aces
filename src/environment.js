@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 // ==========================================
 // SHARED GLSL ATMOSPHERIC & NOISE FUNCTIONS
+// (100% safe for fp16/mediump & Linux Mesa drivers)
 // ==========================================
 const COMMON_ATMOS_GLSL = `
   uniform vec3 uSunDir;
@@ -12,23 +13,19 @@ const COMMON_ATMOS_GLSL = `
   uniform float uSunIntensity;
   uniform float uTime;
 
-  // Fast, high-quality 2D hash & analytical derivative value noise (zero grid artifacts)
-  vec2 hash22(vec2 p) {
-    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-    return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
-  }
-
+  // Range-bounded hash (never exceeds 50.0, 100% immune to fp16 overflow)
   float hash21(vec2 p) {
-    p = fract(p * vec2(123.34, 456.21));
-    p += dot(p, p + 45.32);
-    return fract(p.x * p.y);
+    vec2 q = mod(p, 64.0);
+    q = fract(q * vec2(0.1031, 0.1030));
+    q += dot(q, q.yx + 19.19);
+    return fract((q.x + q.y) * q.x);
   }
 
   // Value noise returning vec3(value, dValue/dx, dValue/dy)
   vec3 noised2(vec2 x) {
-    vec2 i = floor(x);
+    vec2 i = mod(floor(x), 64.0);
     vec2 f = fract(x);
-    // Quintic interpolation with smooth derivatives
+    // Quintic interpolation with smooth analytical derivatives
     vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
     vec2 du = 30.0 * f * f * (f * (f - 2.0) + 1.0);
 
@@ -50,7 +47,7 @@ const COMMON_ATMOS_GLSL = `
 
   // Standard 2D value noise (scalar)
   float vnoise(vec2 x) {
-    vec2 i = floor(x);
+    vec2 i = mod(floor(x), 64.0);
     vec2 f = fract(x);
     vec2 u = f * f * (3.0 - 2.0 * f);
     float a = hash21(i + vec2(0.0, 0.0));
@@ -66,9 +63,10 @@ const COMMON_ATMOS_GLSL = `
   float fbm4(vec2 p) {
     float f = 0.0;
     float amp = 0.5;
+    vec2 q = mod(p, 64.0);
     for (int i = 0; i < 4; i++) {
-      f += amp * vnoise(p);
-      p = ROT_OCTAVE * p * 2.03 + vec2(13.7, 29.1);
+      f += amp * vnoise(q);
+      q = mod(ROT_OCTAVE * q * 2.03 + vec2(3.7, 7.1), 64.0);
       amp *= 0.5;
     }
     return f;
@@ -77,23 +75,31 @@ const COMMON_ATMOS_GLSL = `
   // Shared physically-inspired sky radiance (used by Sky Dome, Ocean reflection, and Aerial Perspective)
   vec3 computeBaseSkyColor(vec3 dir) {
     float y = clamp(dir.y, 0.0, 1.0);
-    // Smooth two-stage vertical gradient: Horizon -> MidSky -> Zenith
-    float lowerCurve = pow(y, 0.42);
+    // Safe non-zero base for pow() so Mesa log2(0) never produces NaN
+    float lowerCurve = pow(max(y, 0.0001), 0.42);
     float upperCurve = smoothstep(0.12, 0.88, y);
     vec3 skyCol = mix(uHorizonColor, uMidSkyColor, lowerCurve);
     skyCol = mix(skyCol, uZenithColor, upperCurve);
 
-    // Subtle warm horizon band toward the sun azimuth
+    // Subtle warm horizon band toward the sun azimuth (using pure multiplications instead of pow)
     float sunDot = clamp(dot(dir, normalize(uSunDir)), 0.0, 1.0);
-    float horizonFactor = pow(1.0 - y, 3.5);
-    skyCol += uSunGlowColor * (pow(sunDot, 3.0) * horizonFactor * 0.38 * clamp(uSunIntensity * 0.4, 0.0, 1.0));
+    float invY = 1.0 - y;
+    float invY2 = invY * invY;
+    float horizonFactor = invY2 * invY * sqrt(max(invY, 0.0001));
+    float sunDot2 = sunDot * sunDot;
+    float sunDot3 = sunDot2 * sunDot;
+    skyCol += uSunGlowColor * (sunDot3 * horizonFactor * 0.38 * clamp(uSunIntensity * 0.4, 0.0, 1.0));
 
     // Mie forward-scattering solar aureole & corona
-    float mieWide = pow(sunDot, 8.0) * 0.22;
-    float mieTight = pow(sunDot, 64.0) * 0.45;
+    float sunDot4 = sunDot2 * sunDot2;
+    float sunDot8 = sunDot4 * sunDot4;
+    float sunDot16 = sunDot8 * sunDot8;
+    float sunDot64 = (sunDot16 * sunDot16) * (sunDot16 * sunDot16);
+    float mieWide = sunDot8 * 0.22;
+    float mieTight = sunDot64 * 0.45;
     skyCol += uSunGlowColor * (mieWide + mieTight) * clamp(uSunIntensity * 0.45, 0.0, 1.2);
 
-    return skyCol;
+    return clamp(skyCol, 0.0, 4.0);
   }
 `;
 
@@ -101,9 +107,10 @@ const COMMON_ATMOS_GLSL = `
 // 1. REALISTIC SKY DOME + VOLUMETRIC CLOUD SHADER
 // ==========================================
 const SKY_VERTEX_SHADER = `
-  varying vec3 vWorldOffset;
+  varying vec3 vRayDir;
   void main() {
-    vWorldOffset = position;
+    // Pass normalized unit vector [-1, 1] so interpolator never overflows fp16
+    vRayDir = normalize(position);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
@@ -113,22 +120,23 @@ const SKY_FRAGMENT_SHADER = `
   uniform vec3 uCameraPos;
   uniform float uCloudCoverage;
   uniform float uNightFactor;
-  varying vec3 vWorldOffset;
+  varying vec3 vRayDir;
 
   // 5-octave organic cumulus cloud density
   float cloudFBM(vec2 p) {
     float v = 0.0;
     float a = 0.52;
+    vec2 q = mod(p, 64.0);
     for (int i = 0; i < 5; i++) {
-      v += a * vnoise(p);
-      p = ROT_OCTAVE * p * 2.07 + vec2(19.3, 41.7);
+      v += a * vnoise(q);
+      q = mod(ROT_OCTAVE * q * 2.07 + vec2(5.3, 11.7), 64.0);
       a *= 0.48;
     }
     return v;
   }
 
   void main() {
-    vec3 dir = normalize(vWorldOffset);
+    vec3 dir = normalize(vRayDir);
     vec3 sunDir = normalize(uSunDir);
     vec3 col = computeBaseSkyColor(dir);
 
@@ -139,29 +147,29 @@ const SKY_FRAGMENT_SHADER = `
     }
 
     // Crisp solar disc above horizon
-    float sunDot = dot(dir, sunDir);
+    float sunDot = clamp(dot(dir, sunDir), 0.0, 1.0);
     float sunDisc = smoothstep(0.99945, 0.99985, sunDot) * step(0.0, sunDir.y);
     col += vec3(1.0, 0.96, 0.88) * sunDisc * 1.4;
 
     // Night stars when sun is below horizon
     if (uNightFactor > 0.05 && dir.y > 0.05) {
-      vec2 starUV = dir.xz / (dir.y + 0.35) * 180.0;
+      vec2 starUV = dir.xz / (dir.y + 0.35) * 45.0;
       float starVal = hash21(floor(starUV));
       vec2 cell = fract(starUV) - 0.5;
       float starSpot = smoothstep(0.18, 0.02, length(cell)) * step(0.992, starVal);
-      float twinkle = 0.65 + 0.35 * sin(uTime * 3.5 + starVal * 100.0);
+      float twinkle = 0.65 + 0.35 * sin(mod(uTime, 62.83) * 3.5 + starVal * 25.0);
       col += vec3(0.85, 0.92, 1.0) * starSpot * twinkle * uNightFactor * smoothstep(0.05, 0.3, dir.y);
     }
 
-    // Volumetric 2-Layer Cloud Deck (projected onto curved atmospheric shell)
+    // Volumetric 2-Layer Cloud Deck (projected onto curved atmospheric shell in range-safe UV units)
     if (dir.y > 0.012) {
-      // Curved atmosphere projection prevents infinite stretching at the horizon
-      float shellDist = 1150.0 / (dir.y + 0.085);
-      vec2 windOffset = vec2(uTime * 14.0, uTime * 6.5);
-      vec2 worldCloudPos = uCameraPos.xz * 0.35 + dir.xz * shellDist + windOffset;
+      float shellScale = 0.44 / (dir.y + 0.085);
+      vec2 camUV = mod(uCameraPos.xz * 0.00013, 64.0);
+      vec2 windUV = mod(vec2(uTime * 0.0053, uTime * 0.0025), 64.0);
+      vec2 baseCloudUV = camUV + dir.xz * shellScale + windUV;
 
       // High-altitude wispy cirrus layer
-      vec2 cirrusUV = worldCloudPos * 0.00022 + vec2(4.2, -1.8);
+      vec2 cirrusUV = baseCloudUV * 0.58 + vec2(4.2, -1.8);
       float cirrusWarp = vnoise(cirrusUV * 1.5);
       float cirrusVal = fbm4(cirrusUV * vec2(1.8, 0.7) + cirrusWarp * 0.65);
       float cirrusMask = smoothstep(0.58, 0.86, cirrusVal) * smoothstep(0.03, 0.25, dir.y) * 0.35;
@@ -169,8 +177,7 @@ const SKY_FRAGMENT_SHADER = `
       col = mix(col, cirrusColor, cirrusMask * (1.0 - uNightFactor * 0.7));
 
       // Main cumulus cloud deck with directional sun self-shadowing
-      vec2 cumUV = worldCloudPos * 0.00038;
-      // Domain warp for billowing cumulus edges
+      vec2 cumUV = baseCloudUV;
       vec2 warp = vec2(vnoise(cumUV * 1.8 + 3.1), vnoise(cumUV * 1.8 + 9.4)) - 0.5;
       float rawDensity = cloudFBM(cumUV + warp * 0.28);
       float thresh = 0.50 - uCloudCoverage * 0.14;
@@ -180,7 +187,6 @@ const SKY_FRAGMENT_SHADER = `
         // Sample density slightly toward the sun for realistic 3D self-shadowing & sunlit rims
         float densityTowardSun = cloudFBM(cumUV + warp * 0.28 + sunDir.xz * 0.12);
         float lightTrans = clamp(1.0 - (densityTowardSun - rawDensity) * 3.2, 0.15, 1.0);
-        // Height gradient inside cloud billow
         float billowTop = smoothstep(thresh, thresh + 0.32, rawDensity);
 
         // Cloud base & lit top colors adapt to day / sunset / night
@@ -188,8 +194,10 @@ const SKY_FRAGMENT_SHADER = `
         vec3 litCloudCol = mix(uSunGlowColor * 1.05, vec3(0.98, 0.99, 1.0), clamp(sunDir.y * 3.0, 0.0, 1.0));
         vec3 shadowCloudCol = mix(vec3(0.06, 0.10, 0.17), vec3(0.42, 0.53, 0.66), dayLight);
 
-        // Silver-lining forward scatter near the sun
-        float silverLining = pow(clamp(sunDot, 0.0, 1.0), 6.0) * (1.0 - cloudAlpha * 0.65) * 0.55;
+        // Silver-lining forward scatter near the sun (sunDot^6 via multiplication)
+        float sd2 = sunDot * sunDot;
+        float sd6 = sd2 * sd2 * sd2;
+        float silverLining = sd6 * (1.0 - cloudAlpha * 0.65) * 0.55;
 
         vec3 cloudCol = mix(shadowCloudCol, litCloudCol, clamp(lightTrans * 0.65 + billowTop * 0.45, 0.0, 1.0));
         cloudCol += uSunGlowColor * silverLining * dayLight;
@@ -202,7 +210,7 @@ const SKY_FRAGMENT_SHADER = `
       }
     }
 
-    gl_FragColor = vec4(col, 1.0);
+    gl_FragColor = vec4(clamp(col, 0.0, 4.0), 1.0);
   }
 `;
 
@@ -227,13 +235,16 @@ const OCEAN_VERTEX_SHADER = `
   void main() {
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vec2 xz = worldPosition.xz;
-    float dist = length(xz - uCameraPos.xz);
+    // Compute distance in kilometers first so dot() never overflows fp16
+    float distKm = length((xz - uCameraPos.xz) * 0.001);
 
     // Smooth 3D vertex ocean swells near the aircraft (attenuated in the distance for a rock-steady horizon)
-    float swellFade = 1.0 - smoothstep(400.0, 3200.0, dist);
-    float w1 = sin(xz.x * 0.032 + xz.y * 0.018 + uTime * 1.45) * 1.15;
-    float w2 = cos(xz.x * 0.021 - xz.y * 0.039 + uTime * 1.15) * 0.85;
-    float w3 = sin(xz.x * 0.065 + xz.y * 0.052 - uTime * 1.95) * 0.38;
+    float swellFade = 1.0 - smoothstep(0.4, 3.2, distKm);
+    float t = mod(uTime, 62.8318);
+    vec2 phase = mod(xz, 628.318);
+    float w1 = sin(phase.x * 0.032 + phase.y * 0.018 + t * 1.45) * 1.15;
+    float w2 = cos(phase.x * 0.021 - phase.y * 0.039 + t * 1.15) * 0.85;
+    float w3 = sin(phase.x * 0.065 + phase.y * 0.052 - t * 1.95) * 0.38;
     worldPosition.y += (w1 + w2 + w3) * swellFade;
 
     vWorldPos = worldPosition.xyz;
@@ -258,61 +269,63 @@ const OCEAN_FRAGMENT_SHADER = `
   }
 
   void main() {
-    vec3 toCam = uCameraPos - vWorldPos;
-    float dist = length(toCam);
-    vec3 V = toCam / max(dist, 0.001);
+    // Scale to kilometers before length() so dot(toCamKm, toCamKm) is <= 650 (never overflows fp16!)
+    vec3 toCamKm = (uCameraPos - vWorldPos) * 0.001;
+    float distKm = length(toCamKm);
+    vec3 V = toCamKm / max(distKm, 0.00001);
     vec3 sunDir = normalize(uSunDir);
 
-    // Projected pixel footprint on the horizontal water plane:
+    // Projected pixel footprint in kilometers on the horizontal water plane:
     // Eliminates 100% of moire / aliasing by attenuating high-frequency waves before they alias!
     float grazing = max(abs(V.y), 0.055);
-    float footprint = dist / grazing;
+    float footprintKm = distKm / grazing;
 
-    vec2 p = vWorldPos.xz;
+    vec2 p = mod(vWorldPos.xz, 2048.0);
+    float t = mod(uTime, 256.0);
     vec2 gradSum = vec2(0.0);
     float waveHeight = 0.0;
 
     // Octave 1: Primary deep-ocean swell (~140m scale)
-    float w1 = 1.0 - smoothstep(2500.0, 18000.0, footprint);
+    float w1 = 1.0 - smoothstep(2.5, 18.0, footprintKm);
     if (w1 > 0.001) {
-      vec2 uv1 = p * 0.024 + vec2(uTime * 0.32, uTime * 0.18);
+      vec2 uv1 = p * 0.024 + vec2(t * 0.32, t * 0.18);
       vec3 n1 = noised2(uv1);
       waveHeight += (n1.x - 0.5) * 1.2 * w1;
       gradSum += n1.yz * 0.24 * w1;
     }
 
     // Octave 2: Cross-swell (~52m scale, rotated via ROT_OCTAVE)
-    float w2 = 1.0 - smoothstep(1100.0, 6500.0, footprint);
+    float w2 = 1.0 - smoothstep(1.1, 6.5, footprintKm);
     if (w2 > 0.001) {
-      vec2 uv2 = (ROT_OCTAVE * p) * 0.068 + vec2(-uTime * 0.46, uTime * 0.31);
+      vec2 uv2 = (ROT_OCTAVE * p) * 0.068 + vec2(-t * 0.46, t * 0.31);
       vec3 n2 = noised2(uv2);
       waveHeight += (n2.x - 0.5) * 0.65 * w2;
       gradSum += (ROT_OCTAVE * n2.yz) * 0.28 * w2;
     }
 
     // Octave 3: Wind waves (~21m scale)
-    float w3 = 1.0 - smoothstep(420.0, 2200.0, footprint);
+    float w3 = 1.0 - smoothstep(0.42, 2.2, footprintKm);
     if (w3 > 0.001) {
       vec2 p3 = ROT_OCTAVE * (ROT_OCTAVE * p);
-      vec2 uv3 = p3 * 0.17 + vec2(uTime * 0.68, -uTime * 0.52);
+      vec2 uv3 = p3 * 0.17 + vec2(t * 0.68, -t * 0.52);
       vec3 n3 = noised2(uv3);
       waveHeight += (n3.x - 0.5) * 0.32 * w3;
       gradSum += n3.yz * 0.26 * w3;
     }
 
     // Octave 4: Short wind chop (~7.5m scale)
-    float w4 = 1.0 - smoothstep(160.0, 780.0, footprint);
+    float w4 = 1.0 - smoothstep(0.16, 0.78, footprintKm);
     if (w4 > 0.001) {
-      vec2 uv4 = (ROT_OCTAVE * p) * 0.48 + vec2(-uTime * 1.05, -uTime * 0.84);
+      vec2 uv4 = (ROT_OCTAVE * p) * 0.48 + vec2(-t * 1.05, -t * 0.84);
       vec3 n4 = noised2(uv4);
       waveHeight += (n4.x - 0.5) * 0.15 * w4;
       gradSum += n4.yz * 0.22 * w4;
     }
 
     // Octave 5: Close-range capillary ripples (~2.6m scale)
-    float w5 = 1.0 - smoothstep(55.0, 260.0, footprint);
+    float w5 = 1.0 - smoothstep(0.055, 0.26, footprintKm);
     if (w5 > 0.001) {
-      vec2 uv5 = p * 1.35 + vec2(uTime * 1.55, uTime * 1.25);
+      vec2 uv5 = p * 1.35 + vec2(t * 1.55, t * 1.25);
       vec3 n5 = noised2(uv5);
       gradSum += n5.yz * 0.16 * w5;
     }
@@ -322,16 +335,16 @@ const OCEAN_FRAGMENT_SHADER = `
     // ==========================================
     // ISLAND CORAL LAGOON & BREAKING WHITE SURF
     // ==========================================
-    float minShoreDist = 10000.0;
+    float minShoreDist = 1000.0;
     for (int i = 0; i < 6; i++) {
-      vec2 dVec = vWorldPos.xz - uIslands[i].xy;
-      float r = length(dVec);
-      float baseRadius = uIslands[i].z;
-      if (r < baseRadius * 1.75) {
-        float ang = atan(dVec.y, dVec.x);
+      vec2 dVecKm = (vWorldPos.xz - uIslands[i].xy) * 0.001;
+      float rKm = length(dVecKm);
+      float baseRadiusKm = uIslands[i].z * 0.001;
+      if (rKm < baseRadiusKm * 1.75) {
+        float ang = atan(dVecKm.y, dVecKm.x);
         float seed = float(i) + 1.0;
-        float coastR = baseRadius * getCoastMultiplier(ang, seed);
-        float sDist = r - coastR;
+        float coastRKm = baseRadiusKm * getCoastMultiplier(ang, seed);
+        float sDist = (rKm - coastRKm) * 1000.0;
         minShoreDist = min(minShoreDist, sDist);
       }
     }
@@ -340,7 +353,7 @@ const OCEAN_FRAGMENT_SHADER = `
     float lagoonFactor = 1.0 - smoothstep(-10.0, 210.0, minShoreDist);
     // Breaking white surf rings washing onto island beaches
     float surfZone = (1.0 - smoothstep(-6.0, 58.0, minShoreDist)) * smoothstep(-18.0, -2.0, minShoreDist);
-    float surfWavePattern = sin(minShoreDist * 0.34 + uTime * 2.8 + waveHeight * 2.5);
+    float surfWavePattern = sin(minShoreDist * 0.34 + t * 2.8 + waveHeight * 2.5);
     float surfFoam = surfZone * smoothstep(0.15, 0.85, surfWavePattern) * (0.65 + 0.35 * (1.0 - smoothstep(0.0, 22.0, minShoreDist)));
 
     // ==========================================
@@ -349,13 +362,12 @@ const OCEAN_FRAGMENT_SHADER = `
     vec2 relCarrier = vWorldPos.xz - uCarrierPos.xz;
     float wakeFoam = 0.0;
     float wakeTurquoise = 0.0;
-    // Stern prop wash trailing behind carrier (+Z is aft of the carrier)
-    if (relCarrier.y > -120.0 && relCarrier.y < 680.0) {
+    if (abs(relCarrier.x) < 220.0 && relCarrier.y > -120.0 && relCarrier.y < 680.0) {
       float aftProgress = clamp((relCarrier.y + 120.0) / 800.0, 0.0, 1.0);
       float wakeHalfWidth = mix(10.0, 44.0, aftProgress);
       float propWash = 1.0 - smoothstep(wakeHalfWidth * 0.35, wakeHalfWidth, abs(relCarrier.x));
       float fadeAft = (1.0 - aftProgress) * smoothstep(-120.0, -40.0, relCarrier.y);
-      float wakeNoise = vnoise(vWorldPos.xz * 0.18 + vec2(0.0, -uTime * 2.2));
+      float wakeNoise = vnoise(p * 0.18 + vec2(0.0, -t * 2.2));
       wakeTurquoise = propWash * fadeAft * 0.75;
       wakeFoam = propWash * fadeAft * smoothstep(0.32, 0.78, wakeNoise) * 0.72;
 
@@ -375,14 +387,16 @@ const OCEAN_FRAGMENT_SHADER = `
     float dayLight = clamp(sunDir.y * 2.4 + 0.28, 0.08, 1.0);
 
     // Crest subsurface scattering (emerald-teal glow when sunlight passes through wave peaks)
-    float crestSSS = clamp(waveHeight * 0.55 + 0.25, 0.0, 1.0) * pow(clamp(dot(V, -sunDir) * 0.5 + 0.5, 0.0, 1.0), 2.0);
+    float backScatter = clamp(dot(V, -sunDir) * 0.5 + 0.5, 0.0, 1.0);
+    float crestSSS = clamp(waveHeight * 0.55 + 0.25, 0.0, 1.0) * (backScatter * backScatter);
     vec3 waterBodyColor = mix(uDeepWaterColor, uShallowWaterColor, crestSSS * 0.55);
 
     // Blend in tropical turquoise lagoon around islands & carrier prop wash
     vec3 lagoonColor = vec3(0.07, 0.62, 0.72) * dayLight;
     vec3 beachEdgeAqua = vec3(0.26, 0.82, 0.84) * dayLight;
+    float lf3 = lagoonFactor * lagoonFactor * lagoonFactor;
     waterBodyColor = mix(waterBodyColor, lagoonColor, lagoonFactor * 0.78);
-    waterBodyColor = mix(waterBodyColor, beachEdgeAqua, pow(lagoonFactor, 3.0) * 0.65);
+    waterBodyColor = mix(waterBodyColor, beachEdgeAqua, lf3 * 0.65);
     waterBodyColor = mix(waterBodyColor, lagoonColor * 0.9, wakeTurquoise);
 
     // Diffuse sun illumination on wave slopes
@@ -390,10 +404,12 @@ const OCEAN_FRAGMENT_SHADER = `
     waterBodyColor *= (0.58 + 0.42 * NdotL);
 
     // True physical water Fresnel (F0 = 0.02 so water looks rich blue, NOT a grey mirror!)
-    float NdotV = max(dot(N, V), 0.0);
-    float fresnel = 0.02 + 0.98 * pow(clamp(1.0 - NdotV, 0.0, 1.0), 4.8);
+    float NdotV = clamp(dot(N, V), 0.0, 1.0);
+    float oneMinusNV = 1.0 - NdotV;
+    float om2 = oneMinusNV * oneMinusNV;
+    float fresnel = 0.02 + 0.98 * (om2 * om2 * oneMinusNV);
     // Reduce Fresnel mirror factor slightly at ultra-long distance so ocean retains deep blue tint
-    fresnel *= mix(0.85, 0.58, smoothstep(800.0, 9000.0, dist));
+    fresnel *= mix(0.85, 0.58, smoothstep(0.8, 9.0, distKm));
 
     vec3 R = reflect(-V, N);
     R.y = max(R.y, 0.01); // Always reflect upper sky hemisphere
@@ -405,16 +421,15 @@ const OCEAN_FRAGMENT_SHADER = `
     // DUAL-LOBE SUN GLITTER PATH (ANTI-ALIASED)
     // ==========================================
     vec3 H = normalize(sunDir + V);
-    float NdotH = max(dot(N, H), 0.0);
-    // As distant wave ripples fade out, broaden the specular lobe slightly to preserve the sun path on the water
-    float specPowerTight = mix(220.0, 75.0, smoothstep(300.0, 7000.0, dist));
+    float NdotH = max(dot(N, H), 0.0001);
+    float specPowerTight = mix(220.0, 75.0, smoothstep(0.3, 7.0, distKm));
     float specTight = pow(NdotH, specPowerTight) * 1.65;
     float specBroad = pow(NdotH, 22.0) * 0.22;
     float sunAboveHorizon = smoothstep(-0.02, 0.08, sunDir.y);
     surfaceCol += uSunGlowColor * (specTight + specBroad) * sunAboveHorizon * clamp(uSunIntensity * 0.42, 0.0, 1.4);
 
     // Open-ocean whitecap foam on high wave crests + island surf + carrier wake
-    float openWhitecap = smoothstep(0.62, 1.05, waveHeight) * (1.0 - smoothstep(250.0, 2400.0, dist)) * 0.45;
+    float openWhitecap = smoothstep(0.62, 1.05, waveHeight) * (1.0 - smoothstep(0.25, 2.4, distKm)) * 0.45;
     float totalFoam = clamp(max(openWhitecap, max(surfFoam, wakeFoam)), 0.0, 1.0);
     vec3 foamColor = vec3(0.94, 0.97, 1.0) * dayLight;
     surfaceCol = mix(surfaceCol, foamColor, totalFoam);
@@ -422,14 +437,13 @@ const OCEAN_FRAGMENT_SHADER = `
     // ==========================================
     // SEAMLESS HORIZON & AERIAL PERSPECTIVE BLEND
     // ==========================================
-    // Blend distant water smoothly into the exact sky color at the horizon viewing direction
-    vec3 viewRay = normalize(vWorldPos - uCameraPos);
+    vec3 viewRay = -V;
     vec3 horizonSkyCol = computeBaseSkyColor(vec3(viewRay.x, max(viewRay.y, 0.002), viewRay.z));
-    float fogFactor = 1.0 - exp(-0.000085 * dist);
-    float horizonEdge = smoothstep(7500.0, 17500.0, dist);
+    float fogFactor = 1.0 - exp(-0.085 * distKm);
+    float horizonEdge = smoothstep(7.5, 16.5, distKm);
     surfaceCol = mix(surfaceCol, horizonSkyCol, clamp(fogFactor * 0.72 + horizonEdge, 0.0, 1.0));
 
-    gl_FragColor = vec4(surfaceCol, 1.0);
+    gl_FragColor = vec4(clamp(surfaceCol, 0.0, 4.0), 1.0);
   }
 `;
 
@@ -461,18 +475,19 @@ const ISLAND_FRAGMENT_SHADER = `
     }
 
     vec3 sunDir = normalize(uSunDir);
-    vec3 toCam = uCameraPos - vWorldPos;
-    float dist = length(toCam);
-    vec3 V = toCam / max(dist, 0.001);
+    // Compute distance in kilometers to avoid fp16 dot() overflow
+    vec3 toCamKm = (uCameraPos - vWorldPos) * 0.001;
+    float distKm = length(toCamKm);
+    vec3 V = toCamKm / max(distKm, 0.00001);
 
-    // Multi-scale world-space procedural detail (stays razor-sharp at any close-up distance!)
-    vec2 wp = vWorldPos.xz;
+    // Multi-scale world-space procedural detail (wrapped into safe UV range)
+    vec2 wp = mod(vWorldPos.xz, 1024.0);
     vec3 detail1 = noised2(wp * 0.045);
     vec3 detail2 = noised2((ROT_OCTAVE * wp) * 0.16);
     float micro = vnoise(wp * 0.65);
 
     // Perturb terrain normal with fine canopy / cliff rock bump detail
-    float detailFade = 1.0 - smoothstep(350.0, 3200.0, dist);
+    float detailFade = 1.0 - smoothstep(0.35, 3.2, distKm);
     vec3 bumpOffset = vec3(
       (detail1.y * 0.14 + detail2.y * 0.12) * detailFade,
       0.0,
@@ -515,7 +530,6 @@ const ISLAND_FRAGMENT_SHADER = `
     // Directional Sunlight + Sky Hemisphere Ambient + Subtle Indirect Bounce
     float dayLight = clamp(sunDir.y * 2.4 + 0.25, 0.08, 1.0);
     float NdotL = max(dot(N, sunDir), 0.0);
-    // Soft wrap lighting for lush foliage
     float wrapDiffuse = max(0.0, (dot(N, sunDir) + 0.18) / 1.18);
     float diff = mix(wrapDiffuse, NdotL, rockMask);
 
@@ -527,17 +541,17 @@ const ISLAND_FRAGMENT_SHADER = `
     // Wet shoreline specular glint
     if (wetFactor > 0.05) {
       vec3 H = normalize(sunDir + V);
-      float wetSpec = pow(max(dot(N, H), 0.0), 48.0) * wetFactor * 0.35 * dayLight;
+      float wetSpec = pow(max(dot(N, H), 0.0001), 48.0) * wetFactor * 0.35 * dayLight;
       litColor += sunCol * wetSpec;
     }
 
     // Seamless Aerial Perspective (matches Sky & Ocean horizon haze)
-    vec3 viewRay = normalize(vWorldPos - uCameraPos);
+    vec3 viewRay = -V;
     vec3 aerialHaze = computeBaseSkyColor(vec3(viewRay.x, max(viewRay.y, 0.01), viewRay.z));
-    float hazeAmount = 1.0 - exp(-0.00011 * dist);
+    float hazeAmount = 1.0 - exp(-0.11 * distKm);
     litColor = mix(litColor, aerialHaze, clamp(hazeAmount * 0.85, 0.0, 0.92));
 
-    gl_FragColor = vec4(litColor, 1.0);
+    gl_FragColor = vec4(clamp(litColor, 0.0, 4.0), 1.0);
   }
 `;
 
@@ -650,8 +664,8 @@ export const ISLAND_DEFINITIONS = [
   { x: 3900, z: 650, radius: 620, height: 340 }
 ];
 
-export function createRealisticEnvironment(scene, renderer) {
-  // Shared uniforms across Sky, Ocean, and Islands so lighting & horizon always match 100%
+export function createRealisticEnvironment(scene) {
+  // Shared uniform value holders across Sky, Ocean, and Islands so lighting & horizon always match 100%
   const sharedUniforms = {
     uTime: { value: 0 },
     uCameraPos: { value: new THREE.Vector3(0, 25, 80) },
@@ -673,17 +687,22 @@ export function createRealisticEnvironment(scene, renderer) {
     }
   };
 
-  // 1. Sky Dome Mesh
-  const skyGeo = new THREE.SphereGeometry(22000, 48, 32);
+  scene.background = new THREE.Color(0x2768b5);
+
+  // 1. Sky Dome Mesh (depthTest: false & renderOrder: -1000 so it always paints the background cleanly)
+  const skyGeo = new THREE.SphereGeometry(10000, 48, 32);
   const skyMat = new THREE.ShaderMaterial({
     vertexShader: SKY_VERTEX_SHADER,
     fragmentShader: SKY_FRAGMENT_SHADER,
     uniforms: sharedUniforms,
     side: THREE.BackSide,
+    depthTest: false,
     depthWrite: false,
     toneMapped: false
   });
   const skyMesh = new THREE.Mesh(skyGeo, skyMat);
+  skyMesh.frustumCulled = false;
+  skyMesh.renderOrder = -1000;
   scene.add(skyMesh);
 
   // 2. Single-Pass Anti-Moire Ocean Mesh
@@ -697,9 +716,10 @@ export function createRealisticEnvironment(scene, renderer) {
     toneMapped: false
   });
   const oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
+  oceanMesh.frustumCulled = false;
   scene.add(oceanMesh);
 
-  // 3. Volcanic Archipelago Islands + Fly-Through Cloud Puffs
+  // 3. Volcanic Archipelago Islands
   const environmentGroup = new THREE.Group();
   scene.add(environmentGroup);
 
@@ -722,18 +742,10 @@ export function createRealisticEnvironment(scene, renderer) {
     environmentGroup.add(islandMesh);
   });
 
-  // 4. Lightweight PBR Environment Cubemap Generator for Metallic Jet & Canopy Reflections
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  let envRenderTarget = null;
-  const envScene = new THREE.Scene();
-  const envSkySphere = new THREE.Mesh(new THREE.SphereGeometry(80, 24, 16), skyMat);
-  envScene.add(envSkySphere);
-
   function setAtmosphere({
     sunElevation = 24,
     sunAzimuth = 145,
     turbidity = 3.5,
-    fogColor = 0x8fbce0,
     fogDensity = 0.00009,
     waterColor = 0x002b4d,
     sunIntensity = 2.6
@@ -778,15 +790,14 @@ export function createRealisticEnvironment(scene, renderer) {
       sharedUniforms.uNightFactor.value = 0.0;
     }
 
+    if (scene.background) {
+      scene.background.copy(sharedUniforms.uHorizonColor.value);
+    }
+
     if (scene.fog) {
       scene.fog.color.copy(sharedUniforms.uHorizonColor.value);
       scene.fog.density = fogDensity * 0.55;
     }
-
-    // Update PBR reflection cubemap for the metallic aircraft and glass canopies
-    if (envRenderTarget) envRenderTarget.dispose();
-    envRenderTarget = pmremGenerator.fromScene(envScene);
-    scene.environment = envRenderTarget.texture;
 
     return sunVec;
   }
